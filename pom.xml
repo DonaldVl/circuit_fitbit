@@ -9,6 +9,7 @@
 	<packaging>pom</packaging>
 
 	<modules>
+		<module>fitbit4j</module>
 		<module>fitbit-connector</module>
 	</modules>
 </project>

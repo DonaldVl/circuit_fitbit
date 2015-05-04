@@ -2,3 +2,6 @@ fitbit-connector/.project
 fitbit-connector/.classpath
 fitbit-connector/.settings/org.eclipse.jdt.core.prefs
 fitbit-connector/.settings/org.eclipse.m2e.core.prefs
+fitbit-connector/.heroku/usage/3.33.0
+fitbit-connector/_netrc
+fitbit-connector/.heroku/autoupdate.last
