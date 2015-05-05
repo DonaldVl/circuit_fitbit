@@ -42,7 +42,6 @@
 
     <modules>
         <module>fitbit4j</module>
-        <module>fitbit4j-example-client</module>
     </modules>
 
         <distributionManagement>
