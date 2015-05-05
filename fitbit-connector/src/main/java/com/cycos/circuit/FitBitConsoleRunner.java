@@ -24,6 +24,13 @@ public class FitBitConsoleRunner
     	System.setProperty("https.proxyPort", "8080");
     	FitBitConnector conn = new FitBitConnector();
     	conn.init();
-    	conn.fetchUserActivities();
+    	while(true) {
+    		conn.fetchUserActivities();
+    		try {
+				Thread.sleep(1000 * 30);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+    	}
     }
 }

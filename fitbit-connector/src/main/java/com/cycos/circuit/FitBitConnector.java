@@ -5,7 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -23,10 +23,10 @@ import com.fitbit.api.client.LocalUserDetail;
 import com.fitbit.api.client.service.FitbitAPIClientService;
 import com.fitbit.api.common.model.activities.Activities;
 import com.fitbit.api.common.model.activities.ActivityLog;
-import com.fitbit.api.common.model.sleep.Sleep;
 import com.fitbit.api.common.model.user.UserInfo;
-import com.fitbit.api.model.APICollectionType;
 import com.fitbit.api.model.APIResourceCredentials;
+import com.google.api.client.util.Collections2;
+import com.google.api.client.util.Sets;
 
 public class FitBitConnector {
 	private FitbitAPIEntityCache entityCache = new FitbitApiEntityCacheMapImpl();
@@ -52,6 +52,7 @@ public class FitBitConnector {
 			ud = new LocalUserDetail(userID);
 			properties = new Properties();
 			properties.load(getClass().getClassLoader().getResourceAsStream("config.properties"));
+			activitiesStore = new ArrayList<ActivityLog>();
 		} catch (IOException e) {
 	        System.out.println("Error reading properties file");
 	    }
@@ -126,6 +127,7 @@ public class FitBitConnector {
 				System.out.println("Description: " + log.getDescription());
 				System.out.println("Distance: " + log.getDistance());
 			}
+			storeActivities(activitiesList);
 		} catch (FitbitAPIException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -133,6 +135,21 @@ public class FitBitConnector {
 	}
 	
 	public void storeActivities(List<ActivityLog> activitiesList) {
-		
+		System.out.println("New activites list: " + activitiesList);
+		System.out.println("Stored activities list " + activitiesStore);
+		for(ActivityLog log : activitiesList) {
+			System.out.println("Searching for activity " + log.getActivityId());
+			boolean isFound = false;
+			for(ActivityLog log2 : activitiesStore) {
+				if(log2.getActivityId() == log.getActivityId()) {
+					System.out.println("Found activity in store " + log2.getActivityId());
+					isFound = true;
+				}
+			}
+			if(!isFound) {
+				System.out.println("New activity found to add to store: " + log.getActivityId());
+				activitiesStore.add(log);
+			}
+		}
 	}
 }
