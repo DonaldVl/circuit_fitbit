@@ -102,4 +102,8 @@ public class FitBitConnection {
 			e.printStackTrace();
 		}
 	}
+	
+	public void subscribe() {
+		apiClientService.
+	}
 }
