@@ -1,9 +1,0 @@
-#NOTE: This is an internal implementation file, its format can be changed without prior notice.
-#Tue May 05 14:08:23 CEST 2015
-testclient-lib-1.5.5-SNAPSHOT-test-javadoc.jar>=
-testclient-lib-1.5.5-SNAPSHOT.jar>=
-testclient-lib-1.5.5-SNAPSHOT-javadoc.jar>=
-testclient-lib-1.5.5-SNAPSHOT-test-sources.jar>=
-testclient-lib-1.5.5-SNAPSHOT.pom>=
-testclient-lib-1.5.5-SNAPSHOT-complete.jar>=
-testclient-lib-1.5.5-SNAPSHOT-sources.jar>=
