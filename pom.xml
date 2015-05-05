@@ -12,4 +12,8 @@
 		<module>fitbit4j</module>
 		<module>fitbit-connector</module>
 	</modules>
+	
+	<properties>
+		<maven.javadoc.skip>true</maven.javadoc.skip>
+	</properties>
 </project>
