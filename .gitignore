@@ -8,3 +8,6 @@ fitbit-connector/.heroku/autoupdate.last
 init.bat
 .settings/org.eclipse.m2e.core.prefs
 .project
+*.class
+*.classpath
+*.prefs
