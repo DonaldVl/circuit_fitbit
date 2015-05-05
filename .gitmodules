@@ -1,1 +1,4 @@
 
+[submodule "fitbit4j"]
+	path = fitbit4j
+	url = https://github.com/DonaldVl/fitbit4j.git
