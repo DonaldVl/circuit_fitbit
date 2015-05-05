@@ -6,3 +6,5 @@ fitbit-connector/.heroku/usage/3.33.0
 fitbit-connector/_netrc
 fitbit-connector/.heroku/autoupdate.last
 init.bat
+.settings/org.eclipse.m2e.core.prefs
+.project
