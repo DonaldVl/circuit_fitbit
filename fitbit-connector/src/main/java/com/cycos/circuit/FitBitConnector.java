@@ -1,13 +1,15 @@
 package com.cycos.circuit;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.sql.Date;
+import java.util.List;
 import java.util.Properties;
+
+import org.joda.time.LocalDate;
 
 import com.fitbit.api.FitbitAPIException;
 import com.fitbit.api.client.FitbitAPIEntityCache;
@@ -19,7 +21,11 @@ import com.fitbit.api.client.FitbitApiSubscriptionStorage;
 import com.fitbit.api.client.FitbitApiSubscriptionStorageInMemoryImpl;
 import com.fitbit.api.client.LocalUserDetail;
 import com.fitbit.api.client.service.FitbitAPIClientService;
+import com.fitbit.api.common.model.activities.Activities;
+import com.fitbit.api.common.model.activities.ActivityLog;
+import com.fitbit.api.common.model.sleep.Sleep;
 import com.fitbit.api.common.model.user.UserInfo;
+import com.fitbit.api.model.APICollectionType;
 import com.fitbit.api.model.APIResourceCredentials;
 
 public class FitBitConnector {
@@ -36,9 +42,14 @@ public class FitBitConnector {
 	private String pin = null;
 	private String accessToken = null;
 	private String accessTokenSecret = null;
+	private String userID = null;
+	private LocalUserDetail ud = null;
+	private List<ActivityLog> activitiesStore = null;
 	
 	public FitBitConnector() {
 		try {
+			userID = "36C6JF";
+			ud = new LocalUserDetail(userID);
 			properties = new Properties();
 			properties.load(getClass().getClassLoader().getResourceAsStream("config.properties"));
 		} catch (IOException e) {
@@ -65,8 +76,7 @@ public class FitBitConnector {
 		            subscriptionStore
 		);
 		
-		String userID = "36C6JF";
-		LocalUserDetail ud = new LocalUserDetail(userID);
+		
 		String url;
 		try {
 			url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
@@ -101,5 +111,28 @@ public class FitBitConnector {
 			System.out.println("IO error: " + e.getMessage());
 			e.printStackTrace();
 		}
+	}
+	
+	public void fetchUserActivities() {
+		try {
+			LocalDate date = LocalDate.now();
+			System.out.println("Printing activities for: " + date.toString());
+			Activities activities = apiClientService.getActivities(ud, date);
+			List<ActivityLog> activitiesList = activities.getActivities();
+			for(ActivityLog log : activitiesList) {
+				System.out.println("Activity: " + log.getActivityId());
+				System.out.println("---------");
+				System.out.println("Start: " + log.getStartTime());
+				System.out.println("Description: " + log.getDescription());
+				System.out.println("Distance: " + log.getDistance());
+			}
+		} catch (FitbitAPIException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void storeActivities(List<ActivityLog> activitiesList) {
+		
 	}
 }
