@@ -9,5 +9,7 @@ init.bat
 .settings/org.eclipse.m2e.core.prefs
 .project
 *.class
-*.classpath
 *.prefs
+.settings
+.classpath
+
