@@ -3,6 +3,9 @@ package com.cycos.circuit;
 public class CircuitData {
 	private String userID = null;
 	private String conversationID = null;
+	private String fitbitUserId = null;
+	
+
 	private String accessToken = null;
 	private String accessTokenSecret = null;
 
@@ -43,5 +46,12 @@ public class CircuitData {
 
 	public void setAccessToken(String accessToken) {
 		this.accessToken = accessToken;
+	}
+	public String getFitbitUserId() {
+		return fitbitUserId;
+	}
+
+	public void setFitbitUserId(String fitbitUserId) {
+		this.fitbitUserId = fitbitUserId;
 	}
 }

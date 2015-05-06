@@ -1,8 +1,11 @@
 package com.cycos.circuit;
 
-import net.ansible.protobuf.conversation.Conversation;
+import java.util.List;
 
 public interface CircuitEventListener {
 	public void onNewDirectConversation(String conversationID, String userID);
+	public void onNewFitbitUserId(String userId, String fitbitUserId);
 	public void onNewAuthenticationToken(String userID, String token);
+	public void onNewFoodEntry(String userId, String food);
+	public void onNewDirectConversation(String conversationID, List<String> userID);
 }
