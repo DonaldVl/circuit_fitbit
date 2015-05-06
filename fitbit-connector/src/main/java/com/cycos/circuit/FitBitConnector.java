@@ -42,7 +42,6 @@ public class FitBitConnector {
 	private String pin = null;
 	private String accessToken = null;
 	private String accessTokenSecret = null;
-	private String userID = null;
 	private LocalUserDetail ud = null;
 	private List<ActivityLog> activitiesStore = null;
 	private long steps = 0;
@@ -51,11 +50,8 @@ public class FitBitConnector {
 	
 	public FitBitConnector(CircuitConnector circuit) {
 		this.circuit = circuit;
-		//data = new FitbitData("36C6JF");
-		data = new FitbitData("donald.vlahovic@gmail.com");
-		userID = data.getUserID();
-		ud = new LocalUserDetail(userID);
 		activitiesStore = new ArrayList<ActivityLog>();
+		data = new FitbitData();
 	}
 	
 	public void init() {
@@ -64,10 +60,7 @@ public class FitBitConnector {
         exampleBaseUrl = data.getExampleBaseUrl();
         clientConsumerKey = data.getClientConsumerKey();
         clientSecret = data.getClientSecret();
-        pin = data.getPin();
-        accessToken = data.getAccessToken();
-        accessTokenSecret = data.getAccessTokenSecret();
-	    
+        
 		apiClientService = new FitbitAPIClientService<FitbitApiClientAgent>(
 		           new FitbitApiClientAgent(apiBaseUrl, fitbitSiteBaseUrl, credentialsCache),
 		            clientConsumerKey,
@@ -76,12 +69,15 @@ public class FitBitConnector {
 		            entityCache,
 		            subscriptionStore
 		);
-		
+	}
+	
+	public void addUser(FitbitUserData userData) {
+		ud = new LocalUserDetail(userData.getUserID());
 		String url;
 		try {
 			url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
 			APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
-			if (accessToken == null && accessTokenSecret == null) {
+			if (userData.getAccessToken() == null && userData.getAccessTokenSecret() == null) {
 				System.out.println("Pease open this URL and enable the application: " + url);
 				System.out.println("Enter PIN:");
 				BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -90,18 +86,15 @@ public class FitBitConnector {
 				creds.setTempTokenVerifier(pin);
 				apiClientService.saveResourceCredentials(ud, creds);
 				apiClientService.getTokenCredentials(ud);		
-				data.setAccessToken(creds.getAccessToken());
-				data.setAccessTokenSecret(creds.getAccessTokenSecret());
+				userData.setAccessToken(creds.getAccessToken());
+				userData.setAccessTokenSecret(creds.getAccessTokenSecret());
 			} else {
-				creds.setAccessToken(accessToken);
-				creds.setAccessTokenSecret(accessTokenSecret);
+				creds.setAccessToken(userData.getAccessToken());
+				creds.setAccessTokenSecret(userData.getAccessTokenSecret());
 			}
-			
-			ud = new LocalUserDetail(apiClientService.getClient().getUserId());
 			
 			UserInfo userInfo = apiClientService.getClient().getUserInfo(ud);
 			System.out.println("Welcome " + userInfo.getDisplayName());
-			//Activities activities = apiService.getActivities(user, new LocalDate());
 		} catch (FitbitAPIException e) {
 			System.out.println("FitBit error: " + e.getMessage());
 			e.printStackTrace();
