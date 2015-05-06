@@ -10,8 +10,11 @@
 
 	<modules>
 		<module>fitbit4j</module>
+		<module>datastore</module>
 		<module>fitbit-connector</module>
-	</modules>
+		<module>circuit-connector</module>
+		<module>fit-at-circuit</module>
+  </modules>
 	
 	<properties>
 		<maven.javadoc.skip>true</maven.javadoc.skip>

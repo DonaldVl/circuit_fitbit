@@ -31,7 +31,6 @@ public class FitBitConnector {
 	private FitbitApiCredentialsCache credentialsCache = new FitbitApiCredentialsCacheMapImpl();
 	private FitbitApiSubscriptionStorage subscriptionStore = new FitbitApiSubscriptionStorageInMemoryImpl();
 	private FitbitAPIClientService<FitbitApiClientAgent> apiClientService = null;
-	private Properties properties;
 	private String apiBaseUrl = null;
 	private String fitbitSiteBaseUrl = null;
 	private String exampleBaseUrl = null;
@@ -43,28 +42,25 @@ public class FitBitConnector {
 	private String userID = null;
 	private LocalUserDetail ud = null;
 	private List<ActivityLog> activitiesStore = null;
+	private long steps = 0;
+	private FitbitData data = null;
 	
 	public FitBitConnector() {
-		try {
-			userID = "36C6JF";
-			ud = new LocalUserDetail(userID);
-			properties = new Properties();
-			properties.load(getClass().getClassLoader().getResourceAsStream("config.properties"));
-			activitiesStore = new ArrayList<ActivityLog>();
-		} catch (IOException e) {
-	        System.out.println("Error reading properties file");
-	    }
+		data = new FitbitData("36C6JF");
+		userID = data.getUserID();
+		ud = new LocalUserDetail(userID);
+		activitiesStore = new ArrayList<ActivityLog>();
 	}
 	
 	public void init() {
-        apiBaseUrl = properties.getProperty("apiBaseUrl");
-        fitbitSiteBaseUrl = properties.getProperty("fitbitSiteBaseUrl");
-        exampleBaseUrl = properties.getProperty("exampleBaseUrl");
-        clientConsumerKey = properties.getProperty("clientConsumerKey");
-        clientSecret = properties.getProperty("clientSecret");
-        pin = properties.getProperty("PIN");
-        accessToken = properties.getProperty("accessToken");
-        accessTokenSecret = properties.getProperty("accessTokenSecret");
+        apiBaseUrl = data.getApiBaseUrl();
+        fitbitSiteBaseUrl = data.getFitbitSiteBaseUrl();
+        exampleBaseUrl = data.getExampleBaseUrl();
+        clientConsumerKey = data.getClientConsumerKey();
+        clientSecret = data.getClientSecret();
+        pin = data.getPin();
+        accessToken = data.getAccessToken();
+        accessTokenSecret = data.getAccessTokenSecret();
 	    
 		apiClientService = new FitbitAPIClientService<FitbitApiClientAgent>(
 		           new FitbitApiClientAgent(apiBaseUrl, fitbitSiteBaseUrl, credentialsCache),
@@ -89,12 +85,8 @@ public class FitBitConnector {
 				creds.setTempTokenVerifier(pin);
 				apiClientService.saveResourceCredentials(ud, creds);
 				apiClientService.getTokenCredentials(ud);		
-				properties.setProperty("accessToken", creds.getAccessToken());
-				properties.setProperty("accessTokenSecret", creds.getAccessTokenSecret());
-				String file = getClass().getClassLoader().getResource("config.properties").getFile();
-				System.out.println("File: " + file);
-				OutputStream os = new FileOutputStream(getClass().getClassLoader().getResource("config.properties").getFile());
-				properties.store(os, "");
+				data.setAccessToken(creds.getAccessToken());
+				data.setAccessTokenSecret(creds.getAccessTokenSecret());
 			} else {
 				creds.setAccessToken(accessToken);
 				creds.setAccessTokenSecret(accessTokenSecret);
@@ -150,12 +142,14 @@ public class FitBitConnector {
 			}
 		}
 	}
+	
 	public void fetchUserSteps() {
 		try {
 			LocalDate date = LocalDate.now();
 			System.out.println("Printing steps for: " + date.toString());
 			Activities activities = apiClientService.getActivities(ud, date);
-			System.out.println("Steps: " + activities.getSummary().getSteps());						
+			int stepsNew = activities.getSummary().getSteps();
+			System.out.println("New number of steps: " + stepsNew);						
 		} catch (FitbitAPIException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
