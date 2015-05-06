@@ -5,6 +5,7 @@ import java.util.Properties;
 
 import javax.servlet.ServletException;
 
+import com.cycos.circuit.impl.CircuitConnectorImpl;
 import com.fitbit.api.client.FitbitAPIEntityCache;
 import com.fitbit.api.client.FitbitApiClientAgent;
 import com.fitbit.api.client.FitbitApiCredentialsCache;
@@ -22,13 +23,17 @@ public class FitBitConsoleRunner
     	System.setProperty("http.proxyPort", "8080");
     	System.setProperty("https.proxyHost", "proxy.cycos.com");
     	System.setProperty("https.proxyPort", "8080");
-    	FitBitConnector conn = new FitBitConnector();
+    	CircuitConnector circuit = new CircuitConnectorImpl();
+    	FitBitConnector conn = new FitBitConnector(circuit);
     	conn.init();
-    	while(true) {
-    		conn.fetchUserActivities();
+    	conn.createSubscription();
+    	int i = 0; 
+    	while(i < 10) {
+    		//conn.fetchUserActivities();
         	conn.fetchUserSteps();
+        	i++;
     		try {
-				Thread.sleep(1000 * 30);
+				Thread.sleep(1000 * 60);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

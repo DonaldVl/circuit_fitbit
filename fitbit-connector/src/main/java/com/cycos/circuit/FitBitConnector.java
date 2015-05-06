@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.joda.time.LocalDate;
+import org.joda.time.LocalTime;
 
 import com.fitbit.api.FitbitAPIException;
 import com.fitbit.api.client.FitbitAPIEntityCache;
@@ -24,7 +25,9 @@ import com.fitbit.api.client.service.FitbitAPIClientService;
 import com.fitbit.api.common.model.activities.Activities;
 import com.fitbit.api.common.model.activities.ActivityLog;
 import com.fitbit.api.common.model.user.UserInfo;
+import com.fitbit.api.model.APICollectionType;
 import com.fitbit.api.model.APIResourceCredentials;
+import com.fitbit.api.model.FitbitUser;
 
 public class FitBitConnector {
 	private FitbitAPIEntityCache entityCache = new FitbitApiEntityCacheMapImpl();
@@ -44,9 +47,12 @@ public class FitBitConnector {
 	private List<ActivityLog> activitiesStore = null;
 	private long steps = 0;
 	private FitbitData data = null;
+	private CircuitConnector circuit = null;
 	
-	public FitBitConnector() {
-		data = new FitbitData("36C6JF");
+	public FitBitConnector(CircuitConnector circuit) {
+		this.circuit = circuit;
+		//data = new FitbitData("36C6JF");
+		data = new FitbitData("donald.vlahovic@gmail.com");
 		userID = data.getUserID();
 		ud = new LocalUserDetail(userID);
 		activitiesStore = new ArrayList<ActivityLog>();
@@ -71,7 +77,6 @@ public class FitBitConnector {
 		            subscriptionStore
 		);
 		
-		
 		String url;
 		try {
 			url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
@@ -92,6 +97,8 @@ public class FitBitConnector {
 				creds.setAccessTokenSecret(accessTokenSecret);
 			}
 			
+			ud = new LocalUserDetail(apiClientService.getClient().getUserId());
+			
 			UserInfo userInfo = apiClientService.getClient().getUserInfo(ud);
 			System.out.println("Welcome " + userInfo.getDisplayName());
 			//Activities activities = apiService.getActivities(user, new LocalDate());
@@ -100,6 +107,16 @@ public class FitBitConnector {
 			e.printStackTrace();
 		} catch (IOException e) {
 			System.out.println("IO error: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	public void createSubscription() {
+		try {
+			apiClientService.subscribe("2", ud, 
+					APICollectionType.activities, ud.getUserId());
+		} catch (FitbitAPIException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -147,13 +164,19 @@ public class FitBitConnector {
 		try {
 			LocalDate date = LocalDate.now();
 			System.out.println("Printing steps for: " + date.toString());
-			Activities activities = apiClientService.getActivities(ud, date);
+			Activities activities = apiClientService.getClient().getActivities(ud, 
+					FitbitUser.CURRENT_AUTHORIZED_USER, date);
 			int stepsNew = activities.getSummary().getSteps();
-			System.out.println("New number of steps: " + stepsNew);						
+			System.out.println("New number of steps: " + stepsNew + " at time " + LocalDate.now().toString() + " " + LocalTime.now().toString());						
 		} catch (FitbitAPIException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
+	public void analyzeUserSteps(int newSteps) {
+		if (newSteps > steps) {
+			//circuit.createTextItem(conversationID, text);
+		}
+	}
 }
