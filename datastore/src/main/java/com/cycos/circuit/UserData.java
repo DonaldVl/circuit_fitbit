@@ -1,19 +1,30 @@
 package com.cycos.circuit;
 
-public class CircuitData {
+public class UserData {
 	private String userID = null;
 	private String conversationID = null;
 	private String fitbitUserId = null;
-	
-
 	private String accessToken = null;
 	private String accessTokenSecret = null;
 
-	public CircuitData(String userID, String conversationID, String accessToken, String accessTokenSecret) {
+	public UserData(String userID, String conversationID, String accessToken, String accessTokenSecret) {
 		this.setUserID(userID);
 		this.setConversationID(conversationID);
 		this.setAccessToken(accessToken);
 		this.setAccessTokenSecret(accessTokenSecret);
+	}
+	
+	public void readAuthFromFile() {
+		ConfigHandler config = new ConfigHandler();
+		config.load();
+		setAccessToken(config.get("accessToken"));
+        setAccessTokenSecret(config.get("accessTokenSecret"));
+	}
+	
+	public void writeAuthToFile() {
+		ConfigHandler config = new ConfigHandler();
+		config.set("accessToken", accessToken);
+		config.set("accessTokenSecret", accessTokenSecret);
 	}
 
 	public String getConversationID() {

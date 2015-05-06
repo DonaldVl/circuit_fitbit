@@ -71,7 +71,7 @@ public class FitBitConnector {
 		);
 	}
 	
-	public void addUser(FitbitUserData userData) {
+	public void addUser(UserData userData) {
 		ud = new LocalUserDetail(userData.getUserID());
 		String url;
 		try {
