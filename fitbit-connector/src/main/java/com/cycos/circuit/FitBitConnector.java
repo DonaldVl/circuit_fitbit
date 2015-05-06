@@ -1,13 +1,10 @@
 package com.cycos.circuit;
 
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
@@ -50,6 +47,33 @@ public class FitBitConnector {
 	
 	public FitBitConnector(CircuitConnector circuit) {
 		this.circuit = circuit;
+		this.circuit.setCircuitEventListener(new CircuitEventListener() {
+            
+            public void onNewFoodEntry(String userId, String food) {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            public void onNewFitbitUserId(String userId, String fitbitUserId) {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            public void onNewDirectConversation(String conversationID, List<String> userID) {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            public void onNewDirectConversation(String conversationID, String userID) {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            public void onNewAuthenticationToken(String userID, String token) {
+                // TODO Auto-generated method stub
+                
+            }
+        });
 		activitiesStore = new ArrayList<ActivityLog>();
 		data = new FitbitData();
 	}

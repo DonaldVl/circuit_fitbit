@@ -4,44 +4,65 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import net.ansible.clientapi.testclient.client.SyncCircuitClient;
 import net.ansible.clientapi.testclient.connection.EventListener;
 import net.ansible.clientapi.testclient.websocket.WebsocketConnection;
 import net.ansible.protobuf.conversation.Conversation.ConversationType;
+import net.ansible.protobuf.conversation.ConversationEvent.CreateConversationEvent;
 import net.ansible.protobuf.conversation.ConversationEvent.EventType;
 import net.ansible.protobuf.conversation.ConversationItem;
-import net.ansible.protobuf.conversation.ConversationItem.TextItem;
-import net.ansible.protobuf.conversation.Participant;
-import net.ansible.protobuf.conversation.ConversationEvent.CreateConversationEvent;
 import net.ansible.protobuf.conversation.ConversationItem.ConversationItemType;
 import net.ansible.protobuf.conversation.ConversationItem.SystemItem;
+import net.ansible.protobuf.conversation.ConversationItem.TextItem;
+import net.ansible.protobuf.conversation.Participant;
 import net.ansible.protobuf.websocket.WSMessage;
 import net.ansible.protobuf.websocket.WSMessage.ContentType;
 import net.ansible.protobuf.websocket.WSMessage.Event;
 
 import com.cycos.circuit.CircuitConnector;
-import com.cycos.circuit.CircuitData;
 import com.cycos.circuit.CircuitEventListener;
+import com.cycos.circuit.ConfigHandler;
+import com.cycos.circuit.UserData;
 
 public class CircuitConnectorImpl implements CircuitConnector, EventListener {
 
-    private final CircuitEventListener listener;
+    private CircuitEventListener listener;
     private final SyncCircuitClient client;
     private final String userId;
 
-    public CircuitConnectorImpl(CircuitEventListener listener) throws URISyntaxException, Exception {
-        WebsocketConnection con = new WebsocketConnection(new URI("wss://localhost:8082/mock/ws"), true);
-        client = new SyncCircuitClient(con, "fitbit@unify.com", "abc123");
+    public CircuitConnectorImpl(ConfigHandler config) throws Exception {
+        WebsocketConnection con = new WebsocketConnection(new URI(config.get("circuitUri")), true);
+        client = new SyncCircuitClient(con, config.get("circuitUsername"), config.get("circuitPassword"));
         userId = client.user().getLoggedOnUser().getResponse().getUser().getGetLoggedOn().getUser().getUserId();
         client.addEventListener(this);
+        this.listener = new CircuitEventListener() {
+
+            public void onNewFoodEntry(String userId, String food) {
+            }
+
+            public void onNewFitbitUserId(String userId, String fitbitUserId) {            
+            }
+
+            public void onNewDirectConversation(String conversationID, List<String> userID) {
+            }
+
+            public void onNewDirectConversation(String conversationID, String userID) {
+            }
+
+            public void onNewAuthenticationToken(String userID, String token) {
+            }
+        };
+    }
+
+    public void setCircuitEventListener(CircuitEventListener listener) {
         this.listener = listener;
     }
 
-    public List<CircuitData> getAllFitbitUsers() {
-        // TODO Auto-generated method stub
-        return null;
+    public List<UserData> getAllFitbitUsers() {
+        return Collections.<UserData> emptyList();
     }
 
     public void createWelcomeTextItem(String conversationId) {
@@ -52,7 +73,11 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         client.conversation().addTextItem(conversationId, null,
                 "Please click the link and follow the instruction. Afterwards come back and post your token with fitbit token 'MY_TOKEN'",
                 TextItem.ContentType.RICH, null, null, null);
+    }
 
+    public void saveUserCredentials(String conversationId, String accessToken, String accessTokenSecret) {
+        client.conversation().addTextItem(conversationId, null, "accessToken='" + accessToken + "' accessTokenSecret='" + accessTokenSecret + "'",
+                TextItem.ContentType.RICH, null, null, null);
     }
 
     public void createTextItem(String conversationId, String text) {
@@ -147,5 +172,4 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     private boolean ignoreItem(ConversationItem item) {
         return userId.equals(item.getCreatorId());
     }
-
 }

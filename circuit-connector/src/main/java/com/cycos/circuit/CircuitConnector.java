@@ -9,4 +9,5 @@ public interface CircuitConnector {
 	public void saveUserCredentials(String conversationId, String accessToken, String accessTokenSecret);
 	public void createTextItem(String conversationId, String text);
 	public void createDirectConversation(String userId);
+	public void setCircuitEventListener(CircuitEventListener listener);
 }
