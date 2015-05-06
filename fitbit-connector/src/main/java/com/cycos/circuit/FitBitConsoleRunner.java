@@ -26,6 +26,7 @@ public class FitBitConsoleRunner
     	conn.init();
     	while(true) {
     		conn.fetchUserActivities();
+        	conn.fetchUserSteps();
     		try {
 				Thread.sleep(1000 * 30);
 			} catch (InterruptedException e) {

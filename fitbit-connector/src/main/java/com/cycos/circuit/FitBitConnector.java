@@ -25,8 +25,6 @@ import com.fitbit.api.common.model.activities.Activities;
 import com.fitbit.api.common.model.activities.ActivityLog;
 import com.fitbit.api.common.model.user.UserInfo;
 import com.fitbit.api.model.APIResourceCredentials;
-import com.google.api.client.util.Collections2;
-import com.google.api.client.util.Sets;
 
 public class FitBitConnector {
 	private FitbitAPIEntityCache entityCache = new FitbitApiEntityCacheMapImpl();
@@ -152,4 +150,16 @@ public class FitBitConnector {
 			}
 		}
 	}
+	public void fetchUserSteps() {
+		try {
+			LocalDate date = LocalDate.now();
+			System.out.println("Printing steps for: " + date.toString());
+			Activities activities = apiClientService.getActivities(ud, date);
+			System.out.println("Steps: " + activities.getSummary().getSteps());						
+		} catch (FitbitAPIException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 }
