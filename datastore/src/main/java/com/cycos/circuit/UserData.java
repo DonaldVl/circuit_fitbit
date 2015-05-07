@@ -7,8 +7,9 @@ public class UserData {
 	private String accessToken = null;
 	private String accessTokenSecret = null;
 
-	public UserData(String userID, String conversationID, String accessToken, String accessTokenSecret) {
+	public UserData(String userID, String fitbitUserId, String conversationID, String accessToken, String accessTokenSecret) {
 		this.setUserID(userID);
+		this.setFitbitUserId(fitbitUserId);
 		this.setConversationID(conversationID);
 		this.setAccessToken(accessToken);
 		this.setAccessTokenSecret(accessTokenSecret);

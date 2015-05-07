@@ -120,11 +120,12 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
                     String[] split = content.split("'");
                     String accessToken = split[1];
                     String accessTokenSecret = split[3];
+                    String fitBitUserId = split[5];
 
                     // Remove fitbit user and get the user itself
                     conversation.getParticipantsList().remove(new Participant(userId));
 
-                    UserData data = new UserData(conversation.getParticipantsList().get(0).getUserId(), item.getConvId(), accessToken, accessTokenSecret);
+                    UserData data = new UserData(conversation.getParticipantsList().get(0).getUserId(), fitBitUserId, item.getConvId(), accessToken, accessTokenSecret);
                     result.add(data);
                 }
             }
@@ -134,17 +135,19 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     }
 
     public void createWelcomeTextItem(String conversationId) {
-        client.conversation().addTextItem(conversationId, "Welcome to fitbit instructor", "blalalalala", TextItem.ContentType.RICH, null, null, null);
+        System.out.println("Create Welcome message in conversation " + conversationId);
+        client.conversation().addTextItem(conversationId, "Welcome to fitbit instructor", "To connect your fitbit account to circuit I need some information. Step One: Please give me your fitbit user id with fitbit user 'YOUR_USERID'", TextItem.ContentType.RICH, null, null, null);
     }
 
     public void createURLTextItem(String conversationId, String url) {
+        System.out.println("Create URL "+ url + " text message in conversation " + conversationId);
         client.conversation().addTextItem(conversationId, null,
                 "Please click the link and follow the instruction. Afterwards come back and post your token with fitbit token 'MY_TOKEN'",
                 TextItem.ContentType.RICH, null, null, null);
     }
 
-    public void saveUserCredentials(String conversationId, String accessToken, String accessTokenSecret) {
-        client.conversation().addTextItem(conversationId, null, "accessToken='" + accessToken + "' accessTokenSecret='" + accessTokenSecret + "'",
+    public void saveUserCredentials(String conversationId, String fitbitUserId, String accessToken, String accessTokenSecret) {
+        client.conversation().addTextItem(conversationId, null, "accessToken='" + accessToken + "' accessTokenSecret='" + accessTokenSecret + "' fitBitUserId='" + fitbitUserId + "'",
                 TextItem.ContentType.RICH, null, null, null);
     }
 

@@ -66,7 +66,7 @@ public class FitBitConnector {
             }
             
             public void onNewDirectConversation(String conversationID, String userID) {
-                UserData user = new UserData(null, conversationID, null, null);
+                UserData user = new UserData(userID, null ,conversationID, null, null);
                 users.add(user);
                 circuit.createWelcomeTextItem(conversationID);
             }
