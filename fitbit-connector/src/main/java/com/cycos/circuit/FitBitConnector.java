@@ -23,6 +23,7 @@ import com.fitbit.api.client.LocalUserDetail;
 import com.fitbit.api.client.service.FitbitAPIClientService;
 import com.fitbit.api.common.model.activities.Activities;
 import com.fitbit.api.common.model.foods.NutritionalValuesEntry;
+import com.fitbit.api.common.model.sleep.SleepLog;
 import com.fitbit.api.common.model.user.UserInfo;
 import com.fitbit.api.model.APICollectionType;
 import com.fitbit.api.model.APIResourceCredentials;
@@ -88,6 +89,7 @@ public class FitBitConnector {
                 circuit.saveUserCredentials(user.getConversationID(), 
                 		user.getFitbitUserId(), user.getAccessToken(), user.getAccessTokenSecret());
                 users.add(user);
+                sendDailyStatistics(ud, user);
             }
         });
 	}
@@ -213,7 +215,8 @@ public class FitBitConnector {
 			}
 		}
 	}
-	private void addFood(LocalUserDetail ud, String food) {
+	
+	public void addFood(LocalUserDetail ud, String food) {
 		System.out.println("Adding food");
 		ArrayList<String> aList= new ArrayList<String>(Arrays.asList(food.split(",")));
 		String fd=aList.get(0);;
@@ -227,22 +230,22 @@ public class FitBitConnector {
 		Calendar calendar = Calendar.getInstance();
 		int hours = calendar.get(Calendar.HOUR_OF_DAY);
 		System.out.println("It's "+ "o'clock. It must be ");
-        if(hours>=8 && hours<=10){
+        if(hours>=8 && hours<=10) {
             mealTypeId=1;
             System.out.println("breakfast.");
-        }else if(hours>12 && hours<=17){
+        } else if(hours>12 && hours<=17) {
         	mealTypeId=2;
         	System.out.println("morning snack.");
-        }else if(hours>12 && hours<=14){
+        } else if(hours>12 && hours<=14) {
             mealTypeId=3;
             System.out.println("lunch.");
-        }else if(hours>14 && hours<=18){
+        } else if(hours>14 && hours<=18) {
         	mealTypeId=4;
         	System.out.println("afternoon snack.");
-        }else if(hours>17 && hours<=21){
+        } else if(hours>17 && hours<=21) {
             mealTypeId=5;
             System.out.println("dinner.");
-        }else {
+        } else {
         	mealTypeId=7;
         	System.out.println("anytime.");
         }
@@ -254,4 +257,41 @@ public class FitBitConnector {
 		}
 		System.out.println("Food: "+fd+" added with amount: "+amount+" and mealTypeId: "+mealTypeId);		
 	}
+	
+	public void sendDailyStatistics(LocalUserDetail ud, UserData user) {
+		boolean anySummary = false;
+		LocalDate date = LocalDate.now();
+		StringBuffer summary = new StringBuffer();		
+		summary.append("I examined your performance today till now. Here it is:");
+		try {
+			List<SleepLog> sleepLogs = apiClientService.getClient().getSleep(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date).getSleepLogs();
+			if (sleepLogs.size()>0) {
+				anySummary=true;
+				summary.append("Sleep:");
+			}
+			for (SleepLog sleepLog: sleepLogs) {
+				int sleepDuration = (int) (sleepLog.getDuration()/1000/60);
+				summary.append("Duration: ").append(sleepDuration/60).append(" hours");
+				if (sleepDuration % 60 != 0) {
+					summary.append(" ").append(sleepDuration % 60).append(" minutes");
+				}				
+				int awakeningCount = sleepLog.getAwakeningsCount();
+				summary.append("Awake Count: ").append(awakeningCount);
+			}
+			Activities activities = apiClientService.getClient().getActivities(ud, 
+					FitbitUser.CURRENT_AUTHORIZED_USER, date);
+			int steps = activities.getSummary().getSteps();
+			if (steps>0) {
+				summary.append("Number of steps: ").append(steps);			
+				anySummary=true;
+			}
+		} catch (FitbitAPIException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (anySummary) {
+			circuit.createTextItem(user.getConversationID(), summary.toString());
+		}
+	}
+
 }
