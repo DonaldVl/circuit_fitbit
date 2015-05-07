@@ -3,6 +3,9 @@ package com.cycos.circuit;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
 
 import org.joda.time.LocalDate;
@@ -19,6 +22,7 @@ import com.fitbit.api.client.FitbitApiSubscriptionStorageInMemoryImpl;
 import com.fitbit.api.client.LocalUserDetail;
 import com.fitbit.api.client.service.FitbitAPIClientService;
 import com.fitbit.api.common.model.activities.Activities;
+import com.fitbit.api.common.model.foods.NutritionalValuesEntry;
 import com.fitbit.api.common.model.user.UserInfo;
 import com.fitbit.api.model.APICollectionType;
 import com.fitbit.api.model.APIResourceCredentials;
@@ -44,11 +48,13 @@ public class FitBitConnector {
 		this.circuit.setCircuitEventListener(new CircuitEventListener() {
             
             public void onNewFoodEntry(String userId, String food) {
-                // TODO Auto-generated method stub
-                
+                UserData user=users.get(userId);                
+                LocalUserDetail ud = authenticateUser(user);;
+                addFood(ud, food);
             }
-            
-            public void onNewFitbitUserId(String userId, String fitbitUserId) {
+                        
+
+			public void onNewFitbitUserId(String userId, String fitbitUserId) {
                 UserData user= users.get(userId);
                 user.setFitbitUserId(fitbitUserId);
                 LocalUserDetail ud = new LocalUserDetail(user.getFitbitUserId());
@@ -193,5 +199,33 @@ public class FitBitConnector {
 						"Hi, here is your Fitbit fitness manager!\nBooooo! You did not walk any step in the last minute...don't you fear getting fat?");
 			}
 		}
+	}
+	private void addFood(LocalUserDetail ud, String food) {		
+		ArrayList<String> aList= new ArrayList<String>(Arrays.asList(food.split(",")));
+		String fd=aList.get(0);;
+		String amount=aList.get(1);
+		int cal=Integer.parseInt(aList.get(2));
+		int unitId = 1;
+		NutritionalValuesEntry nutritionalValuesEntry = new NutritionalValuesEntry();
+		nutritionalValuesEntry.setCalories(cal);	
+		int mealTypeId=7;
+		LocalDate date = LocalDate.now();
+		Calendar calendar = Calendar.getInstance();
+		int hours = calendar.get(Calendar.HOUR_OF_DAY);
+		
+        if(hours>=8 || hours<=12){
+            mealTypeId=1;
+        }else if(hours>12 || hours<=17){
+            mealTypeId=3;
+        }else if(hours>17 || hours<=21){
+            mealTypeId=5;
+        }
+		
+		try {
+			apiClientService.getClient().logFood(ud, fd, null, nutritionalValuesEntry, mealTypeId, unitId, amount, date);
+		} catch (FitbitAPIException e) {
+			e.printStackTrace();
+		}
+		
 	}
 }
