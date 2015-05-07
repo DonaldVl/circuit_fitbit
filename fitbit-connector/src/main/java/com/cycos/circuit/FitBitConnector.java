@@ -205,7 +205,8 @@ public class FitBitConnector {
 			}
 		}
 	}
-	private void addFood(LocalUserDetail ud, String food) {		
+	private void addFood(LocalUserDetail ud, String food) {
+		System.out.println("Adding food");
 		ArrayList<String> aList= new ArrayList<String>(Arrays.asList(food.split(",")));
 		String fd=aList.get(0);;
 		String amount=aList.get(1);
@@ -213,24 +214,36 @@ public class FitBitConnector {
 		int unitId = 1;
 		NutritionalValuesEntry nutritionalValuesEntry = new NutritionalValuesEntry();
 		nutritionalValuesEntry.setCalories(cal);	
-		int mealTypeId=7;
+		int mealTypeId;
 		LocalDate date = LocalDate.now();
 		Calendar calendar = Calendar.getInstance();
 		int hours = calendar.get(Calendar.HOUR_OF_DAY);
-		
-        if(hours>=8 || hours<=12){
+		System.out.println("It's "+ "o'clock. It must be ");
+        if(hours>=8 && hours<=10){
             mealTypeId=1;
-        }else if(hours>12 || hours<=17){
+            System.out.println("breakfast.");
+        }else if(hours>12 && hours<=17){
+        	mealTypeId=2;
+        	System.out.println("morning snack.");
+        }else if(hours>12 && hours<=14){
             mealTypeId=3;
-        }else if(hours>17 || hours<=21){
+            System.out.println("lunch.");
+        }else if(hours>14 && hours<=18){
+        	mealTypeId=4;
+        	System.out.println("afternoon snack.");
+        }else if(hours>17 && hours<=21){
             mealTypeId=5;
+            System.out.println("dinner.");
+        }else {
+        	mealTypeId=7;
+        	System.out.println("anytime.");
         }
-		
+        
 		try {
 			apiClientService.getClient().logFood(ud, fd, null, nutritionalValuesEntry, mealTypeId, unitId, amount, date);
 		} catch (FitbitAPIException e) {
 			e.printStackTrace();
 		}
-		
+		System.out.println("Food: "+fd+" added with amount: "+amount+" and mealTypeId: "+mealTypeId);		
 	}
 }
