@@ -43,8 +43,10 @@ public class FitBitConnector {
 	private FitbitUsers users = null;
 	
 	public FitBitConnector(final CircuitConnector circuit) {
+		users = new FitbitUsers();
 		data = new FitbitData();
 		this.circuit = circuit;
+		users.addAll(circuit.getAllFitbitUsers());
 		this.circuit.setCircuitEventListener(new CircuitEventListener() {
             
             public void onNewFoodEntry(String userId, String food) {
@@ -86,7 +88,6 @@ public class FitBitConnector {
 	}
 	
 	public void init() {
-		users = new FitbitUsers();
         apiBaseUrl = data.getApiBaseUrl();
         fitbitSiteBaseUrl = data.getFitbitSiteBaseUrl();
         clientConsumerKey = data.getClientConsumerKey();

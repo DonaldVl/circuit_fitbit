@@ -2,6 +2,7 @@ package com.cycos.circuit;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class FitbitUsers {
@@ -9,6 +10,12 @@ public class FitbitUsers {
 
 	public FitbitUsers() {
 		users = new HashMap<String, UserData>();
+	}
+	
+	public void addAll(List<UserData> newUsers) {
+		for(UserData user : newUsers) {
+			add(user);
+		}
 	}
 	
 	public Collection<UserData> getUsers() {

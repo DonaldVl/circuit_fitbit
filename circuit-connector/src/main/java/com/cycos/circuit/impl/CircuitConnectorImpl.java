@@ -142,7 +142,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     public void createURLTextItem(String conversationId, String url) {
         System.out.println("Create URL "+ url + " text message in conversation " + conversationId);
         client.conversation().addTextItem(conversationId, null,
-                "Please click the link and follow the instruction. Afterwards come back and post your token with fitbit token 'MY_TOKEN'",
+                "Please click the link " + url + " and follow the instruction. Afterwards come back and post your token with fitbit token 'MY_TOKEN'",
                 TextItem.ContentType.RICH, null, null, null);
     }
 

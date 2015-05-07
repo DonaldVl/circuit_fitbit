@@ -25,9 +25,9 @@ public class FitBitConsoleRunner
         }
     	FitBitConnector conn = new FitBitConnector(circuit);
     	conn.init();
-    	UserData userData = new UserData("36C6JF", null, null, null);
-    	userData.readAuthFromFile();
-    	conn.addUser(userData);
+    	//UserData userData = new UserData("36C6JF", null, null, null);
+    	//userData.readAuthFromFile();
+    	//conn.addUser(userData);
     	while(true) {
         	conn.fetchUserSteps();
     		try {
