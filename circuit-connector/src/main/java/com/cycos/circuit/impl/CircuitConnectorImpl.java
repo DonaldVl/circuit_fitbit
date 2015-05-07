@@ -147,11 +147,13 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     }
 
     public void saveUserCredentials(String conversationId, String fitbitUserId, String accessToken, String accessTokenSecret) {
+        System.out.println(String.format("Create text item in conversation '%s' with fitbit user credentials fitbitUserId='%s' accessToken='%s' accessTokenSecret='%s'", conversationId, fitbitUserId, accessToken, accessTokenSecret));
         client.conversation().addTextItem(conversationId, null, "accessToken='" + accessToken + "' accessTokenSecret='" + accessTokenSecret + "' fitBitUserId='" + fitbitUserId + "'",
                 TextItem.ContentType.RICH, null, null, null);
     }
 
     public void createTextItem(String conversationId, String text) {
+        System.out.println(String.format("Create text item with text '%s' in conversation '%s'", conversationId, text));   
         client.conversation().addTextItem(conversationId, null, text, TextItem.ContentType.RICH, null, null, null);
 
     }
