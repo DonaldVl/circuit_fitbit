@@ -125,6 +125,8 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
                     // Remove fitbit user and get the user itself
                     conversation.getParticipantsList().remove(new Participant(userId));
 
+                    System.out.println(String.format("Found fitbit user configuration in conversation '%s' with credentials fitbitUserId='%s' accessToken='%s' accessTokenSecret='%s'", item.getConvId(), fitBitUserId, accessToken, accessTokenSecret));
+                    
                     UserData data = new UserData(conversation.getParticipantsList().get(0).getUserId(), fitBitUserId, item.getConvId(), accessToken, accessTokenSecret);
                     result.add(data);
                 }
@@ -159,6 +161,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     }
 
     public void createDirectConversation(String userId) {
+        System.out.println(String.format("Create direct conversation with user  '%s'", userId));
         client.conversation()
                 .create(Arrays.asList(new Participant[] { new Participant(userId) }), ConversationType.DIRECT, "FitBit private instructions", null);
 
