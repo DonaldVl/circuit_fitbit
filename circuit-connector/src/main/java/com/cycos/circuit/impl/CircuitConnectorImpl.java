@@ -34,7 +34,8 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     private final String userId;
 
     public CircuitConnectorImpl(ConfigHandler config) throws Exception {
-        WebsocketConnection con = new WebsocketConnection(new URI(config.get("circuitUri")), true);
+    	String url = config.get("circuitUri");
+        WebsocketConnection con = new WebsocketConnection(new URI(url), true);
         client = new SyncCircuitClient(con, config.get("circuitUsername"), config.get("circuitPassword"));
         userId = client.user().getLoggedOnUser().getResponse().getUser().getGetLoggedOn().getUser().getUserId();
         client.addEventListener(this);

@@ -8,8 +8,10 @@ public class FitBitConsoleRunner
     	System.setProperty("http.proxySet", "true");
     	System.setProperty("http.proxyHost", "proxy.cycos.com");
     	System.setProperty("http.proxyPort", "8080");
+    	System.setProperty("http.nonProxyHosts", "lap-tea-2|localhost");
     	System.setProperty("https.proxyHost", "proxy.cycos.com");
     	System.setProperty("https.proxyPort", "8080");
+    	System.setProperty("https.nonProxyHosts", "lap-tea-2|localhost");
     	
     	ConfigHandler config = new ConfigHandler();
     	config.load();
@@ -26,11 +28,8 @@ public class FitBitConsoleRunner
     	UserData userData = new UserData("36C6JF", null, null, null);
     	userData.readAuthFromFile();
     	conn.addUser(userData);
-    	int i = 0; 
-    	while(i < 10) {
-    		//conn.fetchUserActivities();
+    	while(true) {
         	conn.fetchUserSteps();
-        	i++;
     		try {
 				Thread.sleep(1000 * 60);
 			} catch (InterruptedException e) {
