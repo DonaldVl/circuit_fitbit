@@ -212,22 +212,11 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
                         String creatorId = message.getEvent().getConversation().getAddItem().getItem().getCreatorId();
                         for(Command myCommand:commands) {
                             if(myCommand.match(command)) {
+                                System.out.println("Process command: " + command);
                                 myCommand.processs(creatorId, command);
                             }
                             
                         }
-//                        if (command.startsWith("fitbit user")) {
-//                            // User has given his Id
-//                            listener.onNewFitbitUserId(creatorId, extractFitbitUserId(command));
-//
-//                        } else if (command.startsWith("fitbit food")) {
-//                            // User has added new food entry
-//                            listener.onNewFoodEntry(creatorId, extractFoodEntry(command));
-//                        } else if (command.startsWith("fitbit token")) {
-//                            // User has provided the token
-//                            listener.onNewAuthenticationToken(creatorId, extractToken(command));
-//                        }
-
                     }
                 }
 
