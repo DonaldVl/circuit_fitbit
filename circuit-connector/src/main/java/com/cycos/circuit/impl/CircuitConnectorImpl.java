@@ -237,8 +237,8 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             @Override
             public void processs(String circuitUserId, String command) {
                 String result = extractAfter(command);
-                if(result.startsWith("&#160;")) {
-                    result = result.substring("&#160;".length());
+                if(result.startsWith("#160;")) {
+                    result = result.substring("#160;".length());
                 }
                 listener.onNewAuthenticationToken(circuitUserId, result);
             }

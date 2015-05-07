@@ -41,9 +41,11 @@ public class FitBitConnector {
 	private FitbitData data = null;
 	private CircuitConnector circuit = null;
 	private FitbitUsers users = null;
+	private FitbitUsers tempUsers = null;
 	
 	public FitBitConnector(final CircuitConnector circuit) {
 		users = new FitbitUsers();
+		tempUsers = new FitbitUsers();
 		data = new FitbitData();
 		this.circuit = circuit;
 		users.addAll(circuit.getAllFitbitUsers());
@@ -57,7 +59,7 @@ public class FitBitConnector {
                         
 
 			public void onNewFitbitUserId(String userId, String fitbitUserId) {
-                UserData user= users.get(userId);
+                UserData user= tempUsers.get(userId);
                 user.setFitbitUserId(fitbitUserId);
                 LocalUserDetail ud = new LocalUserDetail(user.getFitbitUserId());
                 try {
@@ -75,16 +77,17 @@ public class FitBitConnector {
             
             public void onNewDirectConversation(String conversationID, String userID) {
                 UserData user = new UserData(userID, null ,conversationID, null, null);
-                users.add(user);
+                tempUsers.add(user);
                 circuit.createWelcomeTextItem(conversationID);
             }
             
             public void onNewAuthenticationToken(String userID, String token) {
-                UserData user = users.get(userID);
+                UserData user = tempUsers.get(userID);
                 LocalUserDetail ud = authenticateUser(user);
                 createAccessToken(ud, token, user);
                 circuit.saveUserCredentials(user.getConversationID(), 
                 		user.getFitbitUserId(), user.getAccessToken(), user.getAccessTokenSecret());
+                users.add(user);
             }
         });
 	}
@@ -107,7 +110,7 @@ public class FitBitConnector {
 	
 	public void addUser(UserData userData) {
 		users.add(userData);
-		LocalUserDetail ud = new LocalUserDetail(userData.getUserID());
+		LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
 		String url;
 		try {
 			url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
@@ -137,6 +140,11 @@ public class FitBitConnector {
 	
 	public LocalUserDetail authenticateUser(UserData userData) {
 		LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
+		try {
+			String url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
+		} catch (FitbitAPIException e) {
+			e.printStackTrace();
+		}
 		APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
 		if(userData.getAccessToken() != null) {
 			creds.setAccessToken(userData.getAccessToken());
@@ -159,7 +167,7 @@ public class FitBitConnector {
 	}
 	
 	public void createSubscription(UserData userData) {
-		LocalUserDetail ud = new LocalUserDetail(userData.getUserID());
+		LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
 		try {
 			apiClientService.subscribe("2", ud, 
 					APICollectionType.activities, ud.getUserId());

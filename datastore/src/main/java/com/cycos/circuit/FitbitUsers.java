@@ -14,7 +14,13 @@ public class FitbitUsers {
 	
 	public void addAll(List<UserData> newUsers) {
 		for(UserData user : newUsers) {
-			add(user);
+			if((user.getAccessToken() != null) 
+					&& (user.getAccessTokenSecret() != null)
+					&& (user.getFitbitUserId() != null)
+					&& (user.getConversationID()!= null)) {
+				add(user);
+			}
+			
 		}
 	}
 	
