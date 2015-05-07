@@ -39,9 +39,10 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     private CircuitEventListener listener;
     private final CircuitClient client;
     private final String userId;
-
+    private List<Command> commands = new ArrayList<Command>();
+    
     public CircuitConnectorImpl(ConfigHandler config) throws Exception {
-
+        initCommands();
         TestLibLogger.setLogger(new IClientLogger() {
 
             public void warn(String message) {
@@ -207,20 +208,25 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
                 if (ConversationItemType.TEXT.equals(message.getEvent().getConversation().getAddItem().getItem().getType())) {
                     String command = message.getEvent().getConversation().getAddItem().getItem().getText().getContent();
                     if (isCommand(command)) {
-
+                        
                         String creatorId = message.getEvent().getConversation().getAddItem().getItem().getCreatorId();
-
-                        if (command.startsWith("fitbit user")) {
-                            // User has given his Id
-                            listener.onNewFitbitUserId(creatorId, extractFitbitUserId(command));
-
-                        } else if (command.startsWith("fitbit food")) {
-                            // User has added new food entry
-                            listener.onNewFoodEntry(creatorId, extractFoodEntry(command));
-                        } else if (command.startsWith("fitbit token")) {
-                            // User has provided the token
-                            listener.onNewAuthenticationToken(creatorId, extractToken(command));
+                        for(Command myCommand:commands) {
+                            if(myCommand.match(command)) {
+                                myCommand.processs(creatorId, command);
+                            }
+                            
                         }
+//                        if (command.startsWith("fitbit user")) {
+//                            // User has given his Id
+//                            listener.onNewFitbitUserId(creatorId, extractFitbitUserId(command));
+//
+//                        } else if (command.startsWith("fitbit food")) {
+//                            // User has added new food entry
+//                            listener.onNewFoodEntry(creatorId, extractFoodEntry(command));
+//                        } else if (command.startsWith("fitbit token")) {
+//                            // User has provided the token
+//                            listener.onNewAuthenticationToken(creatorId, extractToken(command));
+//                        }
 
                     }
                 }
@@ -228,24 +234,62 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             }
         }
     }
-
-    private String extractToken(String command) {
-        return command.substring("fitbit token ".length());
-    }
-
-    private String extractFoodEntry(String command) {
-        return command.substring("fitbit food ".length());
-    }
-
-    private String extractFitbitUserId(String command) {
-        return command.substring("fitbit user ".length());
-    }
-
+    
     private boolean isCommand(String command) {
         return command.startsWith("fitbit");
     }
 
     private boolean ignoreItem(ConversationItem item) {
         return userId.equals(item.getCreatorId());
+    }
+    
+    private void initCommands() {
+        commands.add(new Command("token") {
+            @Override
+            public void processs(String circuitUserId, String command) {
+                String result = extractAfter(command);
+                if(result.startsWith("&#160;")) {
+                    result = result.substring("&#160;".length());
+                }
+                listener.onNewAuthenticationToken(circuitUserId, result);
+            }
+            
+        });
+        
+        commands.add(new Command("food") {
+            @Override
+            public void processs(String circuitUserId, String command) {
+                listener.onNewFoodEntry(circuitUserId, extractAfter(command));
+            }
+            
+        });
+        
+        commands.add(new Command("user") {
+            @Override
+            public void processs(String circuitUserId, String command) {
+                listener.onNewFitbitUserId(circuitUserId, extractAfter(command));
+            }
+            
+        });        
+    }
+        
+    abstract class Command {
+        public static final String prefix = "fitbit";
+        private String command;
+        
+        public Command(String command) {
+            this.command = command;
+        }
+        
+        public boolean match(String command) {
+            return command.startsWith(prefix + " " + this.command);
+        }
+        
+        public String extractAfter(String command) {
+            String start = prefix + " " + this.command + " ";
+            return command.substring(start.length());
+        }
+        
+        public abstract void processs(String circuitUserId, String command);
     }
 }
