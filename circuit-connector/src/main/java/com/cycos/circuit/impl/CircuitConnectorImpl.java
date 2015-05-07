@@ -10,6 +10,8 @@ import net.ansible.clientapi.testclient.client.CircuitClient;
 import net.ansible.clientapi.testclient.client.SyncCircuitClient;
 import net.ansible.clientapi.testclient.connection.EventListener;
 import net.ansible.clientapi.testclient.facade.CircuitFactory;
+import net.ansible.clientapi.testclient.logging.IClientLogger;
+import net.ansible.clientapi.testclient.logging.TestLibLogger;
 import net.ansible.clientapi.testclient.websocket.ConnectionConfig;
 import net.ansible.clientapi.testclient.websocket.WebsocketConnection;
 import net.ansible.protobuf.conversation.Conversation;
@@ -39,6 +41,30 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     private final String userId;
 
     public CircuitConnectorImpl(ConfigHandler config) throws Exception {
+
+        TestLibLogger.setLogger(new IClientLogger() {
+
+            public void warn(String message) {
+                System.out.println(message);
+            }
+
+            public void trace(String message) {
+                System.out.println(message);
+            }
+
+            public void info(String message) {
+                System.out.println(message);
+            }
+
+            public void error(String message) {
+                System.out.println(message);
+            }
+
+            public void debug(String message) {
+                System.out.println(message);
+            }
+        });
+
         String userEmail = config.get("circuitUsername");
         String password = config.get("circuitPassword");
         String server = config.get("circuitHost");
@@ -50,13 +76,8 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         } else if (Boolean.valueOf(config.get("clientApiDirect")).booleanValue()) {
             client = CircuitFactory.getSyncClientApiClient(server, userEmail, password);
         } else {
-            if (config.get("proxyHost") != null && !config.get("proxyHost").isEmpty()) {
-                ConnectionConfig testLibConfig = new ConnectionConfig(server, port, config.get("proxyHost"), config.get("proxyPort"));
-                client = CircuitFactory.getAccessServerClient(testLibConfig, userEmail, password);
-            } else {
-                ConnectionConfig testLibConfig = new ConnectionConfig(server, port);
-                client = CircuitFactory.getAccessServerClient(testLibConfig, userEmail, password);
-            }
+            ConnectionConfig testLibConfig = new ConnectionConfig(server, port);
+            client = CircuitFactory.getAccessServerClient(testLibConfig, userEmail, password);
         }
 
         userId = client.user().getLoggedOnUser().getResponse().getUser().getGetLoggedOn().getUser().getUserId();
@@ -94,12 +115,11 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             List<ConversationItem> itemsList = allConversationItems.getResponse().getConversation().getGetItemsByConversation().getItemsList();
 
             for (ConversationItem item : itemsList) {
-                String content = item.getText().getContent();
-                if (item.getType() == ConversationItemType.TEXT && content.startsWith(IDENTIFIER_TOKEN)) {
-
+                if (item.getType() == ConversationItemType.TEXT && item.getText().getContent().startsWith(IDENTIFIER_TOKEN)) {
+                    String content = item.getText().getContent();
                     String[] split = content.split("'");
-                    String accessToken = split[2];
-                    String accessTokenSecret = split[4];
+                    String accessToken = split[1];
+                    String accessTokenSecret = split[3];
 
                     // Remove fitbit user and get the user itself
                     conversation.getParticipantsList().remove(new Participant(userId));

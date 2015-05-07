@@ -3,7 +3,6 @@ package com.cycos.circuit;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.LocalDate;
@@ -20,7 +19,6 @@ import com.fitbit.api.client.FitbitApiSubscriptionStorageInMemoryImpl;
 import com.fitbit.api.client.LocalUserDetail;
 import com.fitbit.api.client.service.FitbitAPIClientService;
 import com.fitbit.api.common.model.activities.Activities;
-import com.fitbit.api.common.model.activities.ActivityLog;
 import com.fitbit.api.common.model.user.UserInfo;
 import com.fitbit.api.model.APICollectionType;
 import com.fitbit.api.model.APIResourceCredentials;

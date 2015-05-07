@@ -8,10 +8,10 @@ public class FitBitConsoleRunner
     	System.setProperty("http.proxySet", "true");
     	System.setProperty("http.proxyHost", "proxy.cycos.com");
     	System.setProperty("http.proxyPort", "8080");
-    	System.setProperty("http.nonProxyHosts", "lap-tea-2|localhost");
+    	System.setProperty("http.nonProxyHosts", "lap-tea-2|localhost|172.17.196.191");
     	System.setProperty("https.proxyHost", "proxy.cycos.com");
     	System.setProperty("https.proxyPort", "8080");
-    	System.setProperty("https.nonProxyHosts", "lap-tea-2|localhost");
+    	System.setProperty("https.nonProxyHosts", "lap-tea-2|localhost|172.17.196.191");
     	
     	ConfigHandler config = new ConfigHandler();
     	config.load();
