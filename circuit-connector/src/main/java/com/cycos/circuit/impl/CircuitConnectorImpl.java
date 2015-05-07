@@ -1,16 +1,20 @@
 package com.cycos.circuit.impl;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
+import net.ansible.clientapi.testclient.client.CircuitClient;
 import net.ansible.clientapi.testclient.client.SyncCircuitClient;
 import net.ansible.clientapi.testclient.connection.EventListener;
+import net.ansible.clientapi.testclient.facade.CircuitFactory;
+import net.ansible.clientapi.testclient.websocket.ConnectionConfig;
 import net.ansible.clientapi.testclient.websocket.WebsocketConnection;
+import net.ansible.protobuf.conversation.Conversation;
 import net.ansible.protobuf.conversation.Conversation.ConversationType;
+import net.ansible.protobuf.conversation.ConversationArea.Direction;
 import net.ansible.protobuf.conversation.ConversationEvent.CreateConversationEvent;
 import net.ansible.protobuf.conversation.ConversationEvent.EventType;
 import net.ansible.protobuf.conversation.ConversationItem;
@@ -29,14 +33,32 @@ import com.cycos.circuit.UserData;
 
 public class CircuitConnectorImpl implements CircuitConnector, EventListener {
 
+    private static final String IDENTIFIER_TOKEN = "accessToken";
     private CircuitEventListener listener;
-    private final SyncCircuitClient client;
+    private final CircuitClient client;
     private final String userId;
 
     public CircuitConnectorImpl(ConfigHandler config) throws Exception {
-    	String url = config.get("circuitUri");
-        WebsocketConnection con = new WebsocketConnection(new URI(url), true);
-        client = new SyncCircuitClient(con, config.get("circuitUsername"), config.get("circuitPassword"));
+        String userEmail = config.get("circuitUsername");
+        String password = config.get("circuitPassword");
+        String server = config.get("circuitHost");
+        String port = config.get("circuitPort");
+
+        if (config.get("circuitUri") != null && !config.get("circuitUri").isEmpty()) {
+            WebsocketConnection con = new WebsocketConnection(new URI(config.get("circuitUri")), true);
+            client = new SyncCircuitClient(con, userEmail, password);
+        } else if (Boolean.valueOf(config.get("clientApiDirect")).booleanValue()) {
+            client = CircuitFactory.getSyncClientApiClient(server, userEmail, password);
+        } else {
+            if (config.get("proxyHost") != null && !config.get("proxyHost").isEmpty()) {
+                ConnectionConfig testLibConfig = new ConnectionConfig(server, port, config.get("proxyHost"), config.get("proxyPort"));
+                client = CircuitFactory.getAccessServerClient(testLibConfig, userEmail, password);
+            } else {
+                ConnectionConfig testLibConfig = new ConnectionConfig(server, port);
+                client = CircuitFactory.getAccessServerClient(testLibConfig, userEmail, password);
+            }
+        }
+
         userId = client.user().getLoggedOnUser().getResponse().getUser().getGetLoggedOn().getUser().getUserId();
         client.addEventListener(this);
         this.listener = new CircuitEventListener() {
@@ -44,7 +66,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             public void onNewFoodEntry(String userId, String food) {
             }
 
-            public void onNewFitbitUserId(String userId, String fitbitUserId) {            
+            public void onNewFitbitUserId(String userId, String fitbitUserId) {
             }
 
             public void onNewDirectConversation(String conversationID, List<String> userID) {
@@ -63,7 +85,32 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     }
 
     public List<UserData> getAllFitbitUsers() {
-        return Collections.<UserData> emptyList();
+        List<UserData> result = new LinkedList<UserData>();
+        WSMessage conversations = client.conversation().getConversations(userId, 0L, Direction.AFTER, Integer.MAX_VALUE, 2);
+        List<Conversation> conversationsList = conversations.getResponse().getConversation().getGetConversations().getConversationsList();
+
+        for (Conversation conversation : conversationsList) {
+            WSMessage allConversationItems = client.conversation().getAllConversationItems(conversation.getConvId(), 0L, Direction.AFTER, Integer.MAX_VALUE);
+            List<ConversationItem> itemsList = allConversationItems.getResponse().getConversation().getGetItemsByConversation().getItemsList();
+
+            for (ConversationItem item : itemsList) {
+                String content = item.getText().getContent();
+                if (item.getType() == ConversationItemType.TEXT && content.startsWith(IDENTIFIER_TOKEN)) {
+
+                    String[] split = content.split("'");
+                    String accessToken = split[2];
+                    String accessTokenSecret = split[4];
+
+                    // Remove fitbit user and get the user itself
+                    conversation.getParticipantsList().remove(new Participant(userId));
+
+                    UserData data = new UserData(conversation.getParticipantsList().get(0).getUserId(), item.getConvId(), accessToken, accessTokenSecret);
+                    result.add(data);
+                }
+            }
+        }
+
+        return result;
     }
 
     public void createWelcomeTextItem(String conversationId) {
