@@ -91,6 +91,7 @@ public class FitBitConnector {
                 circuit.saveUserCredentials(user.getConversationID(), 
                 		user.getFitbitUserId(), user.getAccessToken(), user.getAccessTokenSecret());
                 users.add(user);
+                showProfile(ud, user);
                 sendDailyStatistics(ud, user);
             }
 
@@ -216,9 +217,13 @@ public class FitBitConnector {
 	}
 
 	public void analyzeUserSteps(UserData user, int newSteps) {
+		if (steps == 0) {
+			System.out.println("No data");
+			return;
+		}
 		if (newSteps > steps) {
 			int diffSteps = newSteps - steps;
-			StringBuffer buff = new StringBuffer("Hi, here is your Fitbit fitness manager!\nIn the last minute you walked ");
+			StringBuffer buff = new StringBuffer("In the last minute you walked ");
 			buff.append(diffSteps);
 			buff.append(" steps! Great, continue like this! :-)");
 			circuit.createTextItem(user.getConversationID(), buff.toString());
@@ -226,10 +231,10 @@ public class FitBitConnector {
 		} else {
 			if (newSteps < steps) {
 				circuit.createTextItem(user.getConversationID(), 
-						"Hi, here is your Fitbit fitness manager!\nSomething is wrong with your tracker!");
+						"Something is wrong with your tracker!");
 			} else {
 				circuit.createTextItem(user.getConversationID(), 
-						"Hi, here is your Fitbit fitness manager!\nBooooo! You did not walk any step in the last minute...don't you fear getting fat?");
+						"Booooo! You did not walk any step in the last minute...don't you fear getting fat?");
 			}
 		}
 	}
@@ -274,6 +279,20 @@ public class FitBitConnector {
 			e.printStackTrace();
 		}
 		System.out.println("Food: "+fd+" added with amount: "+amount+" and mealTypeId: "+mealTypeId);		
+	}
+	
+	public void showProfile(LocalUserDetail ud, UserData user) {
+		try {
+			UserInfo userInfo = apiClientService.getClient().getUserInfo(ud);
+			StringBuffer profile = new StringBuffer("Welcome to fitbit, " + userInfo.getDisplayName());
+			profile.append("<b>Your fitbit profile data:</b><br>");
+			profile.append("<b>Name: </b>" + userInfo.getFullName() + "<br>");
+			profile.append("<b>Gender: </b>" + userInfo.getGender() + "<br>");
+			profile.append("<b>Height: </b>" + userInfo.getHeight() + "<br>");
+			profile.append("<b>Date of birth: </b>" + userInfo.getDateOfBirth() + "<br>");
+		} catch (FitbitAPIException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void sendDailyStatistics(LocalUserDetail ud, UserData user) {
