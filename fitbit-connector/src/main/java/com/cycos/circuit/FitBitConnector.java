@@ -22,8 +22,9 @@ import com.fitbit.api.client.FitbitApiSubscriptionStorageInMemoryImpl;
 import com.fitbit.api.client.LocalUserDetail;
 import com.fitbit.api.client.service.FitbitAPIClientService;
 import com.fitbit.api.common.model.activities.Activities;
-import com.fitbit.api.common.model.body.Body;
 import com.fitbit.api.common.model.foods.NutritionalValuesEntry;
+import com.fitbit.api.common.model.heart.Heart;
+import com.fitbit.api.common.model.heart.HeartLog;
 import com.fitbit.api.common.model.sleep.SleepLog;
 import com.fitbit.api.common.model.user.UserInfo;
 import com.fitbit.api.model.APICollectionType;
@@ -280,20 +281,24 @@ public class FitBitConnector {
 		StringBuffer summary = new StringBuffer();		
 		summary.append("I examined your performance till now. Here it is:\n");
 		try {
-			Body body = apiClientService.getClient().getBody(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date);
-			double weight = body.getWeight();
+			double weight = apiClientService.getClient().getWeight(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date);
 			if (weight > 0) {
-				summary.append("Weight: ").append(weight).append(" ");
+				summary.append("Current Weight: ").append(weight).append(" ");
 			}
-			double bmi = body.getBmi();
-			if (bmi > 0) {
-				summary.append("BMI: ").append(bmi).append(" ");
+			summary.append("\n");
+			Heart heart = apiClientService.getClient().getLoggedHeartRate(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date);
+			List<HeartLog> heartLogs = heart.getHeartLog();
+			if (heartLogs.size()>0) {
+				int averageHeartRate = 0;
+				for (HeartLog heartLog: heartLogs) {
+					averageHeartRate+=heartLog.getHeartRate();
+				}
+				averageHeartRate/=heartLogs.size();
+				summary.append("Latest logged heart Rate: ").append(heartLogs.get(heartLogs.size()-1).getHeartRate());
+				summary.append("\nAverage Heart Rate: ").append(averageHeartRate);
+				summary.append("\n");
 			}
-			double fat = body.getFat();
-			if (bmi > 0) {
-				summary.append("Fat: ").append(fat).append("%");
-			}			
-			summary.append("\n");			
+			
 			List<SleepLog> sleepLogs = apiClientService.getClient().getSleep(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date).getSleepLogs();
 			if (sleepLogs.size()>0) {
 				summary.append("Sleep:\n");
