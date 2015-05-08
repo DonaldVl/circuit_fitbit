@@ -316,49 +316,32 @@ public class FitBitConnector {
 	public void sendDailyStatistics(LocalUserDetail ud, UserData user) {
 		LocalDate date = LocalDate.now();
 		StringBuffer summary = new StringBuffer();		
-		summary.append("I examined your performance till now. Here it is:\n");
-		try {
-			double weight = apiClientService.getClient().getWeight(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date);
-			if (weight > 0) {
-				summary.append("Current Weight: ").append(weight).append(" ");
-			}
-			summary.append("\n");
-			Heart heart = apiClientService.getClient().getLoggedHeartRate(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date);
-			List<HeartLog> heartLogs = heart.getHeartLog();
-			if (heartLogs.size()>0) {
-				int averageHeartRate = 0;
-				for (HeartLog heartLog: heartLogs) {
-					averageHeartRate+=heartLog.getHeartRate();
-				}
-				averageHeartRate/=heartLogs.size();
-				summary.append("Latest logged heart Rate: ").append(heartLogs.get(heartLogs.size()-1).getHeartRate());
-				summary.append("\nAverage Heart Rate: ").append(averageHeartRate);
-				summary.append("\n");
-			}
-			
+		summary.append("I examined your performance till now. Here it is:<br>");
+		try {			
 			List<SleepLog> sleepLogs = apiClientService.getClient().getSleep(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date).getSleepLogs();
 			if (sleepLogs.size()>0) {
-				summary.append("Sleep:\n");
+				summary.append("<b>Sleep:<b><br>");
 			}
 			for (SleepLog sleepLog: sleepLogs) {
 				int sleepDuration = (int) (sleepLog.getDuration()/1000/60);
-				summary.append("Duration: ").append(sleepDuration/60).append(" hours");
+				summary.append("<li>Duration: ").append(sleepDuration/60).append(" hours");
 				if (sleepDuration % 60 != 0) {
 					summary.append(" ").append(sleepDuration % 60).append(" minutes");
 				}
-				summary.append("\n");
+				summary.append("</li><br>");
 				int awakeningCount = sleepLog.getAwakeningsCount();
-				summary.append("Awake Count: ").append(awakeningCount).append("\n");
+				summary.append("<li>Awake Count: ").append(awakeningCount).append("</li><br>");
 			}
 			Activities activities = apiClientService.getClient().getActivities(ud, 
 					FitbitUser.CURRENT_AUTHORIZED_USER, date);
 			int steps = activities.getSummary().getSteps();
 			if (steps>0) {
-				summary.append("Number of steps: ").append(steps).append("\n");			
+				summary.append("<b>Number of steps:</b> ").append(steps).append("<br>");			
 			}
 			int activeMinutes = activities.getSummary().getFairlyActiveMinutes()+activities.getSummary().getLightlyActiveMinutes()+activities.getSummary().getVeryActiveMinutes();
 			int sedentaryMinutes = activities.getSummary().getSedentaryMinutes();
-			summary.append("Active Minutes: ").append(activeMinutes).append(" Sedentary Minutes: ").append(sedentaryMinutes);
+			summary.append("<b>Active Minutes:<b> ").append(activeMinutes).append("</br>");
+			summary.append("<b>Inactive Minutes:</b> ").append(sedentaryMinutes).append("</br>");
 			
 		} catch (FitbitAPIException e) {
 			// TODO Auto-generated catch block
