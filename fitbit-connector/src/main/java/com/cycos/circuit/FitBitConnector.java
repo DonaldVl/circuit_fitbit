@@ -74,9 +74,14 @@ public class FitBitConnector {
 				}
             }
             
-            public void onNewGroupConversation(String conversationID, List<String> userID) {
-                // TODO Auto-generated method stub
-                
+            public void onNewGroupConversation(String conversationID, List<String> userIds) {
+                System.out.println("Fitbit user was added to a group conversation. Create direct conversation with all non fitbit members.");
+                for (String userId : userIds) {
+                    if (tempUsers.get(userId) == null) {
+                        System.out.println(userId + " has no account. Create new direct conversation");
+                        circuit.createDirectConversation(userId);
+                    }
+                }
             }
             
             public void onNewDirectConversation(String conversationID, String userID) {
