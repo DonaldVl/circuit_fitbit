@@ -71,7 +71,7 @@ public class FitBitConnector {
 				}
             }
             
-            public void onNewDirectConversation(String conversationID, List<String> userID) {
+            public void onNewGroupConversation(String conversationID, List<String> userID) {
                 // TODO Auto-generated method stub
                 
             }
@@ -90,6 +90,12 @@ public class FitBitConnector {
                 		user.getFitbitUserId(), user.getAccessToken(), user.getAccessTokenSecret());
                 users.add(user);
                 sendDailyStatistics(ud, user);
+            }
+
+
+            public void onNewActivityEntry(String circuitUserId, String extractAfter) {
+                System.out.println("Nothing to demo");
+                
             }
         });
 	}

@@ -7,5 +7,6 @@ public interface CircuitEventListener {
 	public void onNewFitbitUserId(String userId, String fitbitUserId);
 	public void onNewAuthenticationToken(String userID, String token);
 	public void onNewFoodEntry(String userId, String food);
-	public void onNewDirectConversation(String conversationID, List<String> userID);
+	public void onNewGroupConversation(String conversationID, List<String> userID);
+    public void onNewActivityEntry(String circuitUserId, String extractAfter);
 }
