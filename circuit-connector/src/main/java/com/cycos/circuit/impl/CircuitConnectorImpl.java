@@ -261,7 +261,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         if (e.getType() == ContentType.CONVERSATION && e.getConversation() != null && e.getConversation().getCreate() != null) {
 
             CreateConversationEvent create = e.getConversation().getCreate();
-            createWelcomeTextItem(create.getConversation().getConvId());
+//            createWelcomeTextItem(create.getConversation().getConvId());
             // Remove fitbit user
             create.getConversation().getParticipantsList().remove(new Participant(userId));
             if (e.getConversation().getCreate().getConversation().getType() == ConversationType.DIRECT) {
