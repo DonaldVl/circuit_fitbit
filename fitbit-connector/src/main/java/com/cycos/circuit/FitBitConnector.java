@@ -103,10 +103,10 @@ public class FitBitConnector {
                 
             }
 
-
             public void onShowStatsRequest(String circuitUserId, String extractAfter) {
-                // TODO Auto-generated method stub
-                
+            	UserData userData = users.get(circuitUserId);
+            	LocalUserDetail ud = authenticateUser(userData);
+                sendDailyStatistics(ud, userData);
             }
 
 
@@ -117,8 +117,9 @@ public class FitBitConnector {
 
 
             public void onShowProfileRequest(String circuitUserId, String extractAfter) {
-                // TODO Auto-generated method stub
-                
+            	UserData userData = users.get(circuitUserId);
+            	LocalUserDetail ud = authenticateUser(userData);
+                showProfile(ud, userData);
             }
         });
 	}
@@ -238,6 +239,7 @@ public class FitBitConnector {
 
 	public void analyzeUserSteps(UserData user, int newSteps) {
 		if (steps == 0) {
+			steps = newSteps;
 			System.out.println("No data");
 			return;
 		}
