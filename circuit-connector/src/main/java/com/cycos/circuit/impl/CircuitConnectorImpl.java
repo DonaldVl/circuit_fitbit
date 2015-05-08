@@ -144,20 +144,22 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
 
         return result;
     }
+    
+    private final static String STANDARD_SUBJECT= "Hi from your fitbit instructor";
 
     public void createWelcomeTextItem(String conversationId) {
         System.out.println("Create Welcome message in conversation " + conversationId);
         client.conversation()
                 .addTextItem(
                         conversationId,
-                        "Welcome to fitbit instructor",
+                        STANDARD_SUBJECT,
                         "To connect your fitbit account to circuit I need some information. Step One: Please give me your fitbit user id with fitbit user 'YOUR_USERID'",
                         TextItem.ContentType.RICH, null, null, null);
     }
 
     public void createURLTextItem(String conversationId, String url) {
         System.out.println("Create URL " + url + " text message in conversation " + conversationId);
-        client.conversation().addTextItem(conversationId, null,
+        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT,
                 "Please click the link " + url + " and follow the instruction. Afterwards come back and post your token with fitbit token 'MY_TOKEN'",
                 TextItem.ContentType.RICH, null, null, null);
     }
@@ -166,14 +168,14 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         System.out.println(String.format(
                 "Create text item in conversation '%s' with fitbit user credentials fitbitUserId='%s' accessToken='%s' accessTokenSecret='%s'", conversationId,
                 fitbitUserId, accessToken, accessTokenSecret));
-        client.conversation().addTextItem(conversationId, null,
+        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT,
                 "accessToken='" + accessToken + "' accessTokenSecret='" + accessTokenSecret + "' fitBitUserId='" + fitbitUserId + "'",
                 TextItem.ContentType.RICH, null, null, null);
     }
 
     public void createTextItem(String conversationId, String text) {
         System.out.println(String.format("Create text item with text '%s' in conversation '%s'", conversationId, text));
-        client.conversation().addTextItem(conversationId, null, text, TextItem.ContentType.RICH, null, null, null);
+        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, text, TextItem.ContentType.RICH, null, null, null);
 
     }
 
