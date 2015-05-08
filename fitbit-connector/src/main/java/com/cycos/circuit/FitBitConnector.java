@@ -22,6 +22,7 @@ import com.fitbit.api.client.FitbitApiSubscriptionStorageInMemoryImpl;
 import com.fitbit.api.client.LocalUserDetail;
 import com.fitbit.api.client.service.FitbitAPIClientService;
 import com.fitbit.api.common.model.activities.Activities;
+import com.fitbit.api.common.model.devices.Device;
 import com.fitbit.api.common.model.foods.NutritionalValuesEntry;
 import com.fitbit.api.common.model.heart.Heart;
 import com.fitbit.api.common.model.heart.HeartLog;
@@ -92,6 +93,7 @@ public class FitBitConnector {
                 		user.getFitbitUserId(), user.getAccessToken(), user.getAccessTokenSecret());
                 users.add(user);
                 showProfile(ud, user);
+                showDevice(ud, user);
                 sendDailyStatistics(ud, user);
             }
 
@@ -299,15 +301,33 @@ public class FitBitConnector {
 		System.out.println("Food: "+fd+" added with amount: "+amount+" and mealTypeId: "+mealTypeId);		
 	}
 	
+	public void showDevice(LocalUserDetail ud, UserData user) {
+		try {
+			StringBuffer summary = new StringBuffer();
+			List<Device> devices = apiClientService.getClient().getDevices(ud);
+			summary.append("Your device status:<br>");
+			for(Device device : devices) {
+				summary.append("<b>Device: </b>" + device.getId() + "<br>");
+				summary.append("Type: " + device.getType() + "<br>");
+				summary.append("Version: " + device.getDeviceVersion() + "<br");
+				summary.append("Battery: " + device.getBattery() + "<br>");
+				summary.append("Last sync: " + device.getLastSyncTime() + "<br>");
+			}
+		} catch (FitbitAPIException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public void showProfile(LocalUserDetail ud, UserData user) {
 		try {
 			UserInfo userInfo = apiClientService.getClient().getUserInfo(ud);
-			StringBuffer profile = new StringBuffer("Welcome to fitbit, " + userInfo.getDisplayName());
-			profile.append("<b>Your fitbit profile data:</b><br>");
+			StringBuffer profile = new StringBuffer("Welcome to fitbit, " + userInfo.getDisplayName() + "<br>" + "<br>");
+			profile.append("Your fitbit profile data:<br>");
 			profile.append("<b>Name: </b>" + userInfo.getFullName() + "<br>");
 			profile.append("<b>Gender: </b>" + userInfo.getGender() + "<br>");
 			profile.append("<b>Height: </b>" + userInfo.getHeight() + "<br>");
 			profile.append("<b>Date of birth: </b>" + userInfo.getDateOfBirth() + "<br>");
+			circuit.createTextItem(user.getConversationID(), profile.toString());
 		} catch (FitbitAPIException e) {
 			e.printStackTrace();
 		}
