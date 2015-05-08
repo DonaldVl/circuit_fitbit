@@ -158,19 +158,50 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     public void createWelcomeTextItem(String conversationId) {
         System.out.println("Create Welcome message in conversation " + conversationId);
 
-        String text = "To connect your fitbit account to circuit I need some information."
-                + "<br>"
-                + " Step One: Please type in your fitbit user with:"
-                + "<br>"
-                + " fitbit user YOUR_USERID";
+        StringBuilder builder = new StringBuilder();
+        builder.append("<i>");
+        builder.append("To connect your fitbit account to circuit I need some information.");
+        builder.append("</i>");
+        
+        builder.append("<br>");
+        
+        builder.append("<b>");
+        builder.append("Step One: Please send me your fitbit user with the follwing message");  
+        builder.append("</b>");
+        
+        builder.append("<br><br>");
+        
+        builder.append("<div style=\"font-size: 12px;\" align=\"center\">");
+        builder.append("fitbit user YOUR_USERID");
+        builder.append("</div>");
 
-        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, text, TextItem.ContentType.RICH, null, null, null);
+        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, builder.toString(), TextItem.ContentType.RICH, null, null, null);
     }
 
     public void createURLTextItem(String conversationId, String url) {
         System.out.println("Create URL " + url + " text message in conversation " + conversationId);
+        
+        StringBuilder builder = new StringBuilder();
+        builder.append("<b>");
+        builder.append("Step Two: Please click the link");
+        builder.append("</b>");
+        
+        builder.append("<br><br>");
+        
+        builder.append(String.format("<a href=\"%s\">%s</a>", url, url));
+        builder.append("<br><br>");
+        
+        builder.append("<b>");
+        builder.append("and follow the instruction. Afterwards come back and post your token with the follwing message");
+        builder.append("</b>");
+        
+        builder.append("<br><br>");
+        builder.append("<div style=\"font-size: 12px;\" align=\"center\">");
+        builder.append("fitbit token YOUR_TOKEN");
+        builder.append("</div>");
+        
         client.conversation().addTextItem(conversationId, STANDARD_SUBJECT,
-                "Please click the link " + url + " and follow the instruction. Afterwards come back and post your token with fitbit token 'MY_TOKEN'",
+                builder.toString(),
                 TextItem.ContentType.RICH, null, null, null);
     }
 
@@ -178,8 +209,37 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         System.out.println(String.format(
                 "Create text item in conversation '%s' with fitbit user credentials fitbitUserId='%s' accessToken='%s' accessTokenSecret='%s'", conversationId,
                 fitbitUserId, accessToken, accessTokenSecret));
+        
+        StringBuilder builder = new StringBuilder();
+        builder.append("<b>");
+        builder.append("Great your fitbit account is now connected to your circuit acccount");
+        builder.append("</b>");
+        
+        builder.append("<br>");
+        builder.append("<br>");
+        
+        builder.append("accessToken=");
+        builder.append("'");
+        builder.append(accessToken);
+        builder.append("'");
+        
+        builder.append("<br>");
+        
+      
+        builder.append("accessTokenSecret=");
+        builder.append("'");
+        builder.append(accessTokenSecret);
+        builder.append("'");
+        
+        builder.append("<br>");
+        
+        builder.append("fitBitUserId=");
+        builder.append("'");
+        builder.append(fitbitUserId);
+        builder.append("'");
+
         client.conversation().addTextItem(conversationId, STANDARD_SUBJECT,
-                "accessToken='" + accessToken + "' accessTokenSecret='" + accessTokenSecret + "' fitBitUserId='" + fitbitUserId + "'",
+                builder.toString(),
                 TextItem.ContentType.RICH, null, null, null);
     }
 
@@ -199,8 +259,9 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     public void eventReceived(WSMessage message) {
         Event e = message.getEvent();
         if (e.getType() == ContentType.CONVERSATION && e.getConversation() != null && e.getConversation().getCreate() != null) {
-            CreateConversationEvent create = e.getConversation().getCreate();
 
+            CreateConversationEvent create = e.getConversation().getCreate();
+            createWelcomeTextItem(create.getConversation().getConvId());
             // Remove fitbit user
             create.getConversation().getParticipantsList().remove(new Participant(userId));
             if (e.getConversation().getCreate().getConversation().getType() == ConversationType.DIRECT) {
@@ -221,7 +282,6 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
 
             for (Participant p : e.getConversation().getAddItem().getItem().getSystem().getAffectedParticipantsList()) {
                 if (p.getUserId().equals(userId)) {
-
                     WSMessage conversationMsg = client.conversation().getConversationById(e.getConversation().getConvId());
                     List<Participant> participants = conversationMsg.getResponse().getConversation().getGetConversationById().getConversation()
                             .getParticipantsList();
