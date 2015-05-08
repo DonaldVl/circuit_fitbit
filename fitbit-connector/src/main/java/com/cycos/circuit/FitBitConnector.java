@@ -100,6 +100,24 @@ public class FitBitConnector {
                 System.out.println("Nothing to demo");
                 
             }
+
+
+            public void onShowStatsRequest(String circuitUserId, String extractAfter) {
+                // TODO Auto-generated method stub
+                
+            }
+
+
+            public void onShowAlarmRequest(String circuitUserId, String extractAfter) {
+                // TODO Auto-generated method stub
+                
+            }
+
+
+            public void onShowProfileRequest(String circuitUserId, String extractAfter) {
+                // TODO Auto-generated method stub
+                
+            }
         });
 	}
 	

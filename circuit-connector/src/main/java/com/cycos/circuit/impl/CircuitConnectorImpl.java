@@ -103,8 +103,15 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             }
 
             public void onNewActivityEntry(String circuitUserId, String extractAfter) {
-                // TODO Auto-generated method stub
+            }
 
+            public void onShowStatsRequest(String circuitUserId, String extractAfter) {
+            }
+
+            public void onShowAlarmRequest(String circuitUserId, String extractAfter) {
+            }
+
+            public void onShowProfileRequest(String circuitUserId, String extractAfter) {
             }
         };
     }
@@ -351,6 +358,30 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             @Override
             public void processs(String circuitUserId, String command) {
                 listener.onNewActivityEntry(circuitUserId, extractAfter(command));
+            }
+
+        });
+        
+        commands.add(new Command("show stats") {
+            @Override
+            public void processs(String circuitUserId, String command) {
+                listener.onShowStatsRequest(circuitUserId, extractAfter(command));
+            }
+
+        });
+        
+        commands.add(new Command("show alarm") {
+            @Override
+            public void processs(String circuitUserId, String command) {
+                listener.onShowAlarmRequest(circuitUserId, extractAfter(command));
+            }
+
+        });
+        
+        commands.add(new Command("show profile") {
+            @Override
+            public void processs(String circuitUserId, String command) {
+                listener.onShowProfileRequest(circuitUserId, extractAfter(command));
             }
 
         });
