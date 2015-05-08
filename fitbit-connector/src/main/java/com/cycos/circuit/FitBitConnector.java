@@ -278,27 +278,28 @@ public class FitBitConnector {
 		boolean anySummary = false;
 		LocalDate date = LocalDate.now();
 		StringBuffer summary = new StringBuffer();		
-		summary.append("I examined your performance today till now. Here it is:");
+		summary.append("I examined your performance till now. Here it is:\n");
 		try {
 			List<SleepLog> sleepLogs = apiClientService.getClient().getSleep(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date).getSleepLogs();
 			if (sleepLogs.size()>0) {
 				anySummary=true;
-				summary.append("Sleep:");
+				summary.append("Sleep:\n");
 			}
 			for (SleepLog sleepLog: sleepLogs) {
 				int sleepDuration = (int) (sleepLog.getDuration()/1000/60);
 				summary.append("Duration: ").append(sleepDuration/60).append(" hours");
 				if (sleepDuration % 60 != 0) {
 					summary.append(" ").append(sleepDuration % 60).append(" minutes");
-				}				
+				}
+				summary.append("\n");
 				int awakeningCount = sleepLog.getAwakeningsCount();
-				summary.append("Awake Count: ").append(awakeningCount);
+				summary.append("Awake Count: ").append(awakeningCount).append("\n");
 			}
 			Activities activities = apiClientService.getClient().getActivities(ud, 
 					FitbitUser.CURRENT_AUTHORIZED_USER, date);
 			int steps = activities.getSummary().getSteps();
 			if (steps>0) {
-				summary.append("Number of steps: ").append(steps);			
+				summary.append("Number of steps: ").append(steps).append("\n");			
 				anySummary=true;
 			}
 		} catch (FitbitAPIException e) {
