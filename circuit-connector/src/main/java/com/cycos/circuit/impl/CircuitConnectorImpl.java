@@ -84,7 +84,13 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         } else if (Boolean.valueOf(config.get("clientApiDirect")).booleanValue()) {
             client = CircuitFactory.getSyncClientApiClient(server, userEmail, password);
         } else {
-            ConnectionConfig testLibConfig = new ConnectionConfig(server, port);
+        	ConnectionConfig testLibConfig = null;
+        	if(config.get("proxyHost") != null) {
+        		testLibConfig = new ConnectionConfig(server, port, 
+        				config.get("proxyHost"), config.get("proxyPort"));
+        	} else {
+        		testLibConfig = new ConnectionConfig(server, port);
+        	}
             client = CircuitFactory.getAccessServerClient(testLibConfig, userEmail, password);
         }
 
@@ -95,7 +101,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             public void onNewFoodEntry(String userId, String food) {
             }
 
-            public void onNewFitbitUserId(String userId, String fitbitUserId) {
+            public void onNewFitbitUserId(String userId, String fitbitUserId, String conversationID) {
             }
 
             public void onNewGroupConversation(String conversationID, List<String> userID) {
@@ -104,7 +110,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             public void onNewDirectConversation(String conversationID, String userID) {
             }
 
-            public void onNewAuthenticationToken(String userID, String token) {
+            public void onNewAuthenticationToken(String userID, String token, String conversationID) {
             }
 
             public void onNewActivityEntry(String circuitUserId, String extractAfter) {
@@ -375,7 +381,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
                 if (result.startsWith("#160;")) {
                     result = result.substring("#160;".length());
                 }
-                listener.onNewAuthenticationToken(context.circuitUserId, result);
+                listener.onNewAuthenticationToken(context.circuitUserId, result, context.conversationId);
             }
 
         });
@@ -423,7 +429,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         commands.add(new Command("user") {
             @Override
             public void processs(ProcesssContext context) {
-                listener.onNewFitbitUserId(context.circuitUserId, extractAfter(context.command));
+                listener.onNewFitbitUserId(context.circuitUserId, extractAfter(context.command), context.conversationId);
             }
 
         });

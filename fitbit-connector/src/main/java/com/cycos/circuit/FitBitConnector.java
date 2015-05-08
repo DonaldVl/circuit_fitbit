@@ -68,8 +68,12 @@ public class FitBitConnector {
                 addFood(ud, food);
             }
 
-            public void onNewFitbitUserId(String userId, String fitbitUserId) {
-                UserData user = tempUsers.get(userId);
+			public void onNewFitbitUserId(String userId, String fitbitUserId, String conversationID) {
+                UserData user= tempUsers.get(userId);
+                if (user == null) {
+                	 user = new UserData(userId, null, conversationID, null, null);
+                     tempUsers.add(user);
+                }
                 user.setFitbitUserId(fitbitUserId);
                 LocalUserDetail ud = new LocalUserDetail(user.getFitbitUserId());
                 try {
@@ -96,8 +100,8 @@ public class FitBitConnector {
                 tempUsers.add(user);
                 circuit.createWelcomeTextItem(conversationID);
             }
-
-            public void onNewAuthenticationToken(String userID, String token) {
+            
+            public void onNewAuthenticationToken(String userID, String token, String conversationID) {
                 UserData user = tempUsers.get(userID);
                 LocalUserDetail ud = preAuthenticateUser(user);
                 createAccessToken(ud, token, user);
