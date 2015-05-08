@@ -3,6 +3,7 @@ package com.cycos.circuit.impl;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -114,7 +115,13 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     public List<UserData> getAllFitbitUsers() {
         List<UserData> result = new LinkedList<UserData>();
         WSMessage conversations = client.conversation().getConversations(userId, 0L, Direction.AFTER, Integer.MAX_VALUE, 2);
-        List<Conversation> conversationsList = conversations.getResponse().getConversation().getGetConversations().getConversationsList();
+
+        List<Conversation> conversationsList = null;
+        if (conversations.getResponse().getConversation().getGetConversations() == null) {
+            conversationsList = Collections.<Conversation> emptyList();
+        } else {
+            conversationsList = conversations.getResponse().getConversation().getGetConversations().getConversationsList();
+        }
 
         for (Conversation conversation : conversationsList) {
             WSMessage allConversationItems = client.conversation().getAllConversationItems(conversation.getConvId(), 0L, Direction.AFTER, Integer.MAX_VALUE);
@@ -144,17 +151,15 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
 
         return result;
     }
-    
-    private final static String STANDARD_SUBJECT= "Hi from your fitbit instructor";
+
+    private final static String STANDARD_SUBJECT = "Hi from your fitbit instructor";
 
     public void createWelcomeTextItem(String conversationId) {
         System.out.println("Create Welcome message in conversation " + conversationId);
-        client.conversation()
-                .addTextItem(
-                        conversationId,
-                        STANDARD_SUBJECT,
-                        "To connect your fitbit account to circuit I need some information. Step One: Please give me your fitbit user id with fitbit user 'YOUR_USERID'",
-                        TextItem.ContentType.RICH, null, null, null);
+
+        String text = "To connect your fitbit account to circuit I need some information. Step One: Please give me your fitbit user id with fitbit user 'YOUR_USERID'";
+
+        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, text, TextItem.ContentType.RICH, null, null, null);
     }
 
     public void createURLTextItem(String conversationId, String url) {
