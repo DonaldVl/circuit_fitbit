@@ -28,6 +28,7 @@ import net.ansible.protobuf.conversation.Participant;
 import net.ansible.protobuf.websocket.WSMessage;
 import net.ansible.protobuf.websocket.WSMessage.ContentType;
 import net.ansible.protobuf.websocket.WSMessage.Event;
+import net.ansible.protobuf.websocket.WSMessage.Response.ReturnCode;
 
 import com.cycos.circuit.CircuitConnector;
 import com.cycos.circuit.CircuitEventListener;
@@ -117,7 +118,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         WSMessage conversations = client.conversation().getConversations(userId, 0L, Direction.AFTER, Integer.MAX_VALUE, 2);
 
         List<Conversation> conversationsList = null;
-        if (conversations.getResponse().getConversation().getGetConversations() == null) {
+        if (conversations.getResponse().getCode() == ReturnCode.NO_RESULT) {
             conversationsList = Collections.<Conversation> emptyList();
         } else {
             conversationsList = conversations.getResponse().getConversation().getGetConversations().getConversationsList();
@@ -157,7 +158,11 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     public void createWelcomeTextItem(String conversationId) {
         System.out.println("Create Welcome message in conversation " + conversationId);
 
-        String text = "To connect your fitbit account to circuit I need some information. Step One: Please give me your fitbit user id with fitbit user 'YOUR_USERID'";
+        String text = "To connect your fitbit account to circuit I need some information."
+                + "<br>"
+                + " Step One: Please type in your fitbit user with:"
+                + "<br>"
+                + " fitbit user YOUR_USERID";
 
         client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, text, TextItem.ContentType.RICH, null, null, null);
     }
