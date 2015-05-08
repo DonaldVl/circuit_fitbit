@@ -103,20 +103,20 @@ public class FitBitConnector {
                 
             }
 
-            public void onShowStatsRequest(String circuitUserId, String extractAfter) {
+            public void onShowStatsRequest(String circuitUserId) {
             	UserData userData = users.get(circuitUserId);
             	LocalUserDetail ud = authenticateUser(userData);
                 sendDailyStatistics(ud, userData);
             }
 
 
-            public void onShowAlarmRequest(String circuitUserId, String extractAfter) {
+            public void onShowAlarmRequest(String circuitUserId) {
                 // TODO Auto-generated method stub
                 
             }
 
 
-            public void onShowProfileRequest(String circuitUserId, String extractAfter) {
+            public void onShowProfileRequest(String circuitUserId) {
             	UserData userData = users.get(circuitUserId);
             	LocalUserDetail ud = authenticateUser(userData);
                 showProfile(ud, userData);

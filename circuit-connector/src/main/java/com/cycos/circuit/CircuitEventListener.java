@@ -9,7 +9,7 @@ public interface CircuitEventListener {
 	public void onNewFoodEntry(String userId, String food);
 	public void onNewGroupConversation(String conversationID, List<String> userID);
     public void onNewActivityEntry(String circuitUserId, String extractAfter);
-    public void onShowStatsRequest(String circuitUserId, String extractAfter);
-    public void onShowAlarmRequest(String circuitUserId, String extractAfter);
-    public void onShowProfileRequest(String circuitUserId, String extractAfter);
+    public void onShowStatsRequest(String circuitUserId);
+    public void onShowAlarmRequest(String circuitUserId);
+    public void onShowProfileRequest(String circuitUserId);
 }

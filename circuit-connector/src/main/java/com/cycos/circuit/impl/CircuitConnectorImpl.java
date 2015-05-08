@@ -105,13 +105,13 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             public void onNewActivityEntry(String circuitUserId, String extractAfter) {
             }
 
-            public void onShowStatsRequest(String circuitUserId, String extractAfter) {
+            public void onShowStatsRequest(String circuitUserId) {
             }
 
-            public void onShowAlarmRequest(String circuitUserId, String extractAfter) {
+            public void onShowAlarmRequest(String circuitUserId) {
             }
 
-            public void onShowProfileRequest(String circuitUserId, String extractAfter) {
+            public void onShowProfileRequest(String circuitUserId) {
             }
         };
     }
@@ -365,7 +365,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         commands.add(new Command("show stats") {
             @Override
             public void processs(String circuitUserId, String command) {
-                listener.onShowStatsRequest(circuitUserId, extractAfter(command));
+                listener.onShowStatsRequest(circuitUserId);
             }
 
         });
@@ -373,7 +373,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         commands.add(new Command("show alarm") {
             @Override
             public void processs(String circuitUserId, String command) {
-                listener.onShowAlarmRequest(circuitUserId, extractAfter(command));
+                listener.onShowAlarmRequest(circuitUserId);
             }
 
         });
@@ -381,7 +381,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         commands.add(new Command("show profile") {
             @Override
             public void processs(String circuitUserId, String command) {
-                listener.onShowProfileRequest(circuitUserId, extractAfter(command));
+                listener.onShowProfileRequest(circuitUserId);
             }
 
         });
