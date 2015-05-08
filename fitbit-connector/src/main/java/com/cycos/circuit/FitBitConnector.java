@@ -22,6 +22,7 @@ import com.fitbit.api.client.FitbitApiSubscriptionStorageInMemoryImpl;
 import com.fitbit.api.client.LocalUserDetail;
 import com.fitbit.api.client.service.FitbitAPIClientService;
 import com.fitbit.api.common.model.activities.Activities;
+import com.fitbit.api.common.model.body.Body;
 import com.fitbit.api.common.model.foods.NutritionalValuesEntry;
 import com.fitbit.api.common.model.sleep.SleepLog;
 import com.fitbit.api.common.model.user.UserInfo;
@@ -275,14 +276,26 @@ public class FitBitConnector {
 	}
 	
 	public void sendDailyStatistics(LocalUserDetail ud, UserData user) {
-		boolean anySummary = false;
 		LocalDate date = LocalDate.now();
 		StringBuffer summary = new StringBuffer();		
 		summary.append("I examined your performance till now. Here it is:\n");
 		try {
+			Body body = apiClientService.getClient().getBody(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date);
+			double weight = body.getWeight();
+			if (weight > 0) {
+				summary.append("Weight: ").append(weight).append(" ");
+			}
+			double bmi = body.getBmi();
+			if (bmi > 0) {
+				summary.append("BMI: ").append(bmi).append(" ");
+			}
+			double fat = body.getFat();
+			if (bmi > 0) {
+				summary.append("Fat: ").append(fat).append("%");
+			}			
+			summary.append("\n");			
 			List<SleepLog> sleepLogs = apiClientService.getClient().getSleep(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date).getSleepLogs();
 			if (sleepLogs.size()>0) {
-				anySummary=true;
 				summary.append("Sleep:\n");
 			}
 			for (SleepLog sleepLog: sleepLogs) {
@@ -300,15 +313,16 @@ public class FitBitConnector {
 			int steps = activities.getSummary().getSteps();
 			if (steps>0) {
 				summary.append("Number of steps: ").append(steps).append("\n");			
-				anySummary=true;
 			}
+			int activeMinutes = activities.getSummary().getFairlyActiveMinutes()+activities.getSummary().getLightlyActiveMinutes()+activities.getSummary().getVeryActiveMinutes();
+			int sedentaryMinutes = activities.getSummary().getSedentaryMinutes();
+			summary.append("Active Minutes: ").append(activeMinutes).append(" Sedentary Minutes: ").append(sedentaryMinutes);
+			
 		} catch (FitbitAPIException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if (anySummary) {
-			circuit.createTextItem(user.getConversationID(), summary.toString());
-		}
+		circuit.createTextItem(user.getConversationID(), summary.toString());
 	}
 
 }
