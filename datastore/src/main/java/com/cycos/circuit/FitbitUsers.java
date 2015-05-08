@@ -14,11 +14,14 @@ public class FitbitUsers {
 	
 	public void addAll(List<UserData> newUsers) {
 		for(UserData user : newUsers) {
-			if((user.getAccessToken() != null) 
-					&& (user.getAccessTokenSecret() != null)
-					&& (user.getFitbitUserId() != null)
-					&& (user.getConversationID()!= null)) {
+			if((user.getAccessToken() == null || user.getAccessToken().equals("null")) 
+					|| (user.getAccessTokenSecret() == null || user.getAccessTokenSecret().equals("null"))
+					|| (user.getFitbitUserId() == null || user.getFitbitUserId().equals("null"))
+					|| (user.getConversationID() == null || user.getConversationID().equals("null"))) {
+				System.out.println("Uncomplete user: " + user.getFitbitUserId());
+			} else {
 				add(user);
+				System.out.println("Added fitbit user: " + user.getFitbitUserId());
 			}
 			
 		}

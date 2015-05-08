@@ -84,7 +84,7 @@ public class FitBitConnector {
             
             public void onNewAuthenticationToken(String userID, String token) {
                 UserData user = tempUsers.get(userID);
-                LocalUserDetail ud = authenticateUser(user);
+                LocalUserDetail ud = preAuthenticateUser(user);
                 createAccessToken(ud, token, user);
                 circuit.saveUserCredentials(user.getConversationID(), 
                 		user.getFitbitUserId(), user.getAccessToken(), user.getAccessTokenSecret());
@@ -147,6 +147,16 @@ public class FitBitConnector {
 		} catch (FitbitAPIException e) {
 			e.printStackTrace();
 		}
+		APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
+		if(userData.getAccessToken() != null) {
+			creds.setAccessToken(userData.getAccessToken());
+			creds.setAccessTokenSecret(userData.getAccessTokenSecret());
+		}
+		return ud;
+	}
+	
+	public LocalUserDetail preAuthenticateUser(UserData userData) {
+		LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
 		APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
 		if(userData.getAccessToken() != null) {
 			creds.setAccessToken(userData.getAccessToken());
