@@ -1,9 +1,14 @@
 package com.cycos.circuit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.cycos.circuit.impl.CircuitConnectorImpl;
 
 public class FitBitConsoleRunner 
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FitBitConsoleRunner.class);
+    
     public static void main(String[] args) {
     	System.setProperty("http.proxySet", "true");
     	System.setProperty("http.proxyHost", "proxy.cycos.com");
@@ -19,8 +24,7 @@ public class FitBitConsoleRunner
         try {
             circuit = new CircuitConnectorImpl(config);
         } catch (Exception e) {
-            System.err.println("Connection to Access server was not possible");
-            e.printStackTrace();
+            LOGGER.error("Connection to Access server was not possible", e);
             return;
         }
     	FitBitConnector conn = new FitBitConnector(circuit);
@@ -33,7 +37,7 @@ public class FitBitConsoleRunner
     		try {
 				Thread.sleep(1000 * 60);
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+			    LOGGER.error("Error while waiting", e);
 			}
     	}
     }

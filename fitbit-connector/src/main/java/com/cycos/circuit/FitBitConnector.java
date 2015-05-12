@@ -10,6 +10,8 @@ import java.util.List;
 
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fitbit.api.FitbitAPIException;
 import com.fitbit.api.client.FitbitAPIEntityCache;
@@ -24,8 +26,6 @@ import com.fitbit.api.client.service.FitbitAPIClientService;
 import com.fitbit.api.common.model.activities.Activities;
 import com.fitbit.api.common.model.devices.Device;
 import com.fitbit.api.common.model.foods.NutritionalValuesEntry;
-import com.fitbit.api.common.model.heart.Heart;
-import com.fitbit.api.common.model.heart.HeartLog;
 import com.fitbit.api.common.model.sleep.SleepLog;
 import com.fitbit.api.common.model.user.UserInfo;
 import com.fitbit.api.model.APICollectionType;
@@ -33,347 +33,337 @@ import com.fitbit.api.model.APIResourceCredentials;
 import com.fitbit.api.model.FitbitUser;
 
 public class FitBitConnector {
-	private FitbitAPIEntityCache entityCache = new FitbitApiEntityCacheMapImpl();
-	private FitbitApiCredentialsCache credentialsCache = new FitbitApiCredentialsCacheMapImpl();
-	private FitbitApiSubscriptionStorage subscriptionStore = new FitbitApiSubscriptionStorageInMemoryImpl();
-	private FitbitAPIClientService<FitbitApiClientAgent> apiClientService = null;
-	private String apiBaseUrl = null;
-	private String fitbitSiteBaseUrl = null;
-	private String clientConsumerKey = null;
-	private String clientSecret = null;
-	private int steps = 0;
-	private FitbitData data = null;
-	private CircuitConnector circuit = null;
-	private FitbitUsers users = null;
-	private FitbitUsers tempUsers = null;
-	
-	public FitBitConnector(final CircuitConnector circuit) {
-		users = new FitbitUsers();
-		tempUsers = new FitbitUsers();
-		data = new FitbitData();
-		this.circuit = circuit;
-		users.addAll(circuit.getAllFitbitUsers());
-		this.circuit.setCircuitEventListener(new CircuitEventListener() {
-            
+    private static final Logger LOGGER = LoggerFactory.getLogger(FitBitConnector.class);
+
+    private FitbitAPIEntityCache entityCache = new FitbitApiEntityCacheMapImpl();
+    private FitbitApiCredentialsCache credentialsCache = new FitbitApiCredentialsCacheMapImpl();
+    private FitbitApiSubscriptionStorage subscriptionStore = new FitbitApiSubscriptionStorageInMemoryImpl();
+    private FitbitAPIClientService<FitbitApiClientAgent> apiClientService = null;
+    private String apiBaseUrl = null;
+    private String fitbitSiteBaseUrl = null;
+    private String clientConsumerKey = null;
+    private String clientSecret = null;
+    private int steps = 0;
+    private FitbitData data = null;
+    private CircuitConnector circuit = null;
+    private FitbitUsers users = null;
+    private FitbitUsers tempUsers = null;
+
+    public FitBitConnector(final CircuitConnector circuit) {
+        users = new FitbitUsers();
+        tempUsers = new FitbitUsers();
+        data = new FitbitData();
+        this.circuit = circuit;
+        users.addAll(circuit.getAllFitbitUsers());
+        this.circuit.setCircuitEventListener(new CircuitEventListener() {
+
             public void onNewFoodEntry(String userId, String food) {
-                UserData user=users.get(userId);                
-                LocalUserDetail ud = authenticateUser(user);;
+                UserData user = users.get(userId);
+                LocalUserDetail ud = authenticateUser(user);
+                ;
                 addFood(ud, food);
             }
-                        
 
-			public void onNewFitbitUserId(String userId, String fitbitUserId) {
-                UserData user= tempUsers.get(userId);
+            public void onNewFitbitUserId(String userId, String fitbitUserId) {
+                UserData user = tempUsers.get(userId);
                 user.setFitbitUserId(fitbitUserId);
                 LocalUserDetail ud = new LocalUserDetail(user.getFitbitUserId());
                 try {
-					String url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
-					circuit.createURLTextItem(user.getConversationID(), url);
-				} catch (FitbitAPIException e) {
-					e.printStackTrace();
-				}
+                    String url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
+                    circuit.createURLTextItem(user.getConversationID(), url);
+                } catch (FitbitAPIException e) {
+                    LOGGER.error("New error", e);;
+                }
             }
-            
+
             public void onNewGroupConversation(String conversationID, List<String> userIds) {
-                System.out.println("Fitbit user was added to a group conversation. Create direct conversation with all non fitbit members.");
+                LOGGER.info("Fitbit user was added to a group conversation. Create direct conversation with all non fitbit members.");
                 for (String userId : userIds) {
                     if (tempUsers.get(userId) == null) {
-                        System.out.println(userId + " has no account. Create new direct conversation");
+                        LOGGER.info(userId + " has no account. Create new direct conversation");
                         circuit.createDirectConversation(userId);
                     }
                 }
             }
-            
+
             public void onNewDirectConversation(String conversationID, String userID) {
-                UserData user = new UserData(userID, null ,conversationID, null, null);
+                UserData user = new UserData(userID, null, conversationID, null, null);
                 tempUsers.add(user);
                 circuit.createWelcomeTextItem(conversationID);
             }
-            
+
             public void onNewAuthenticationToken(String userID, String token) {
                 UserData user = tempUsers.get(userID);
                 LocalUserDetail ud = preAuthenticateUser(user);
                 createAccessToken(ud, token, user);
-                circuit.saveUserCredentials(user.getConversationID(), 
-                		user.getFitbitUserId(), user.getAccessToken(), user.getAccessTokenSecret());
+                circuit.saveUserCredentials(user.getConversationID(), user.getFitbitUserId(), user.getAccessToken(), user.getAccessTokenSecret());
                 users.add(user);
                 showProfile(ud, user);
                 showDevice(ud, user);
                 sendDailyStatistics(ud, user);
             }
 
-
             public void onNewActivityEntry(String circuitUserId, String extractAfter) {
-                System.out.println("Nothing to demo");
-                
+                LOGGER.info("Nothing to demo");
+
             }
 
             public void onShowStatsRequest(String circuitUserId) {
-            	UserData userData = users.get(circuitUserId);
-            	LocalUserDetail ud = authenticateUser(userData);
+                UserData userData = users.get(circuitUserId);
+                LocalUserDetail ud = authenticateUser(userData);
                 sendDailyStatistics(ud, userData);
             }
 
-
             public void onShowAlarmRequest(String circuitUserId) {
                 // TODO Auto-generated method stub
-                
-            }
 
+            }
 
             public void onShowProfileRequest(String circuitUserId) {
-            	UserData userData = users.get(circuitUserId);
-            	LocalUserDetail ud = authenticateUser(userData);
+                UserData userData = users.get(circuitUserId);
+                LocalUserDetail ud = authenticateUser(userData);
                 showProfile(ud, userData);
             }
+
+            public void onStartCombatMode(String circuitUserId, String extractAfter) {
+
+            }
         });
-	}
-	
-	public void init() {
+    }
+
+    public void init() {
         apiBaseUrl = data.getApiBaseUrl();
         fitbitSiteBaseUrl = data.getFitbitSiteBaseUrl();
         clientConsumerKey = data.getClientConsumerKey();
         clientSecret = data.getClientSecret();
-        
-		apiClientService = new FitbitAPIClientService<FitbitApiClientAgent>(
-		           new FitbitApiClientAgent(apiBaseUrl, fitbitSiteBaseUrl, credentialsCache),
-		            clientConsumerKey,
-		            clientSecret,
-		            credentialsCache,
-		            entityCache,
-		            subscriptionStore
-		);
-	}
-	
-	public void addUser(UserData userData) {
-		users.add(userData);
-		LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
-		String url;
-		try {
-			url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
-			APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
-			if (userData.getAccessToken() == null && userData.getAccessTokenSecret() == null) {
-				System.out.println("Pease open this URL and enable the application: " + url);
-				System.out.println("Enter PIN:");
-				BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-				String pin = br.readLine();
-				System.out.println("PIN: " + pin);
-				createAccessToken(ud, pin, userData);
-			} else {
-				creds.setAccessToken(userData.getAccessToken());
-				creds.setAccessTokenSecret(userData.getAccessTokenSecret());
-			}
-			
-			UserInfo userInfo = apiClientService.getClient().getUserInfo(ud);
-			System.out.println("Welcome " + userInfo.getDisplayName());
-		} catch (FitbitAPIException e) {
-			System.out.println("FitBit error: " + e.getMessage());
-			e.printStackTrace();
-		} catch (IOException e) {
-			System.out.println("IO error: " + e.getMessage());
-			e.printStackTrace();
-		}
-	}
-	
-	public LocalUserDetail authenticateUser(UserData userData) {
-		LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
-		try {
-			String url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
-		} catch (FitbitAPIException e) {
-			e.printStackTrace();
-		}
-		APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
-		if(userData.getAccessToken() != null) {
-			creds.setAccessToken(userData.getAccessToken());
-			creds.setAccessTokenSecret(userData.getAccessTokenSecret());
-		}
-		return ud;
-	}
-	
-	public LocalUserDetail preAuthenticateUser(UserData userData) {
-		LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
-		APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
-		if(userData.getAccessToken() != null) {
-			creds.setAccessToken(userData.getAccessToken());
-			creds.setAccessTokenSecret(userData.getAccessTokenSecret());
-		}
-		return ud;
-	}
-	
-	public void createAccessToken(LocalUserDetail ud, String pin, UserData userData) {
-		try {
-			APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
-			creds.setTempTokenVerifier(pin);
-			apiClientService.saveResourceCredentials(ud, creds);
-			apiClientService.getTokenCredentials(ud);
-			userData.setAccessToken(creds.getAccessToken());
-			userData.setAccessTokenSecret(creds.getAccessTokenSecret());
-		} catch (FitbitAPIException e) {
-			e.printStackTrace();
-		}		
-	}
-	
-	public void createSubscription(UserData userData) {
-		LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
-		try {
-			apiClientService.subscribe("2", ud, 
-					APICollectionType.activities, ud.getUserId());
-		} catch (FitbitAPIException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	public void fetchUserSteps() {
-		for (UserData user : users.getUsers()) {
-			LocalUserDetail ud = authenticateUser(user);
-			try {
-				LocalDate date = LocalDate.now();
-				System.out.println("Printing steps for: " + date.toString());
-				Activities activities = apiClientService.getClient().getActivities(ud, 
-						FitbitUser.CURRENT_AUTHORIZED_USER, date);
-				int stepsNew = activities.getSummary().getSteps();
-				System.out.println("New number of steps: " + stepsNew + " at time " + LocalDate.now().toString() + " " + LocalTime.now().toString());
-				analyzeUserSteps(user, stepsNew);
-			} catch (FitbitAPIException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
 
-	public void analyzeUserSteps(UserData user, int newSteps) {
-		if (steps == 0) {
-			steps = newSteps;
-			System.out.println("No data");
-			return;
-		}
-		if (newSteps > steps) {
-			int diffSteps = newSteps - steps;
-			StringBuffer buff = new StringBuffer("In the last minute you walked ");
-			buff.append(diffSteps);
-			buff.append(" steps! Great, continue like this! :-)");
-			circuit.createTextItem(user.getConversationID(), buff.toString());
-			steps = newSteps;
-		} else {
-			if (newSteps < steps) {
-				circuit.createTextItem(user.getConversationID(), 
-						"Something is wrong with your tracker!");
-			} else {
-				circuit.createTextItem(user.getConversationID(), 
-						"Booooo! You did not walk any step in the last minute...don't you fear getting fat?");
-			}
-		}
-	}
-	
-	public void addFood(LocalUserDetail ud, String food) {
-		System.out.println("Adding food");
-		ArrayList<String> aList= new ArrayList<String>(Arrays.asList(food.split(",")));
-		String fd=aList.get(0);;
-		String amount=aList.get(1);
-		int cal=Integer.parseInt(aList.get(2));
-		int unitId = 1;
-		NutritionalValuesEntry nutritionalValuesEntry = new NutritionalValuesEntry();
-		nutritionalValuesEntry.setCalories(cal);	
-		int mealTypeId;
-		LocalDate date = LocalDate.now();
-		Calendar calendar = Calendar.getInstance();
-		int hours = calendar.get(Calendar.HOUR_OF_DAY);
-		System.out.println("It's "+ "o'clock. It must be ");
-        if(hours>=8 && hours<=10) {
-            mealTypeId=1;
-            System.out.println("breakfast.");
-        } else if(hours>12 && hours<=17) {
-        	mealTypeId=2;
-        	System.out.println("morning snack.");
-        } else if(hours>12 && hours<=14) {
-            mealTypeId=3;
-            System.out.println("lunch.");
-        } else if(hours>14 && hours<=18) {
-        	mealTypeId=4;
-        	System.out.println("afternoon snack.");
-        } else if(hours>17 && hours<=21) {
-            mealTypeId=5;
-            System.out.println("dinner.");
-        } else {
-        	mealTypeId=7;
-        	System.out.println("anytime.");
+        apiClientService = new FitbitAPIClientService<FitbitApiClientAgent>(new FitbitApiClientAgent(apiBaseUrl, fitbitSiteBaseUrl, credentialsCache),
+                clientConsumerKey, clientSecret, credentialsCache, entityCache, subscriptionStore);
+    }
+
+    public void addUser(UserData userData) {
+        users.add(userData);
+        LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
+        String url;
+        try {
+            url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
+            APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
+            if (userData.getAccessToken() == null && userData.getAccessTokenSecret() == null) {
+                LOGGER.info("Pease open this URL and enable the application: " + url);
+                LOGGER.info("Enter PIN:");
+                BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                String pin = br.readLine();
+                LOGGER.info("PIN: " + pin);
+                createAccessToken(ud, pin, userData);
+            } else {
+                creds.setAccessToken(userData.getAccessToken());
+                creds.setAccessTokenSecret(userData.getAccessTokenSecret());
+            }
+
+            UserInfo userInfo = apiClientService.getClient().getUserInfo(ud);
+            LOGGER.info("Welcome " + userInfo.getDisplayName());
+        } catch (FitbitAPIException e) {
+            LOGGER.info("FitBit error: " + e.getMessage());
+            LOGGER.error("New error", e);;
+        } catch (IOException e) {
+            LOGGER.info("IO error: " + e.getMessage());
+            LOGGER.error("New error", e);;
         }
-        
-		try {
-			apiClientService.getClient().logFood(ud, fd, null, nutritionalValuesEntry, mealTypeId, unitId, amount, date);
-		} catch (FitbitAPIException e) {
-			e.printStackTrace();
-		}
-		System.out.println("Food: "+fd+" added with amount: "+amount+" and mealTypeId: "+mealTypeId);		
-	}
-	
-	public void showDevice(LocalUserDetail ud, UserData user) {
-		try {
-			StringBuffer summary = new StringBuffer();
-			List<Device> devices = apiClientService.getClient().getDevices(ud);
-			summary.append("Your device status:<br>");
-			for(Device device : devices) {
-				summary.append("<b>Device: </b>" + device.getId() + "<br>");
-				summary.append("Type: " + device.getType() + "<br>");
-				summary.append("Version: " + device.getDeviceVersion() + "<br");
-				summary.append("Battery: " + device.getBattery() + "<br>");
-				summary.append("Last sync: " + device.getLastSyncTime() + "<br>");
-			}
-		} catch (FitbitAPIException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public void showProfile(LocalUserDetail ud, UserData user) {
-		try {
-			UserInfo userInfo = apiClientService.getClient().getUserInfo(ud);
-			StringBuffer profile = new StringBuffer("Welcome to fitbit, " + userInfo.getDisplayName() + "<br>" + "<br>");
-			profile.append("Your fitbit profile data:<br>");
-			profile.append("<b>Name: </b>" + userInfo.getFullName() + "<br>");
-			profile.append("<b>Gender: </b>" + userInfo.getGender() + "<br>");
-			profile.append("<b>Height: </b>" + userInfo.getHeight() + "<br>");
-			profile.append("<b>Date of birth: </b>" + userInfo.getDateOfBirth() + "<br>");
-			circuit.createTextItem(user.getConversationID(), profile.toString());
-		} catch (FitbitAPIException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public void sendDailyStatistics(LocalUserDetail ud, UserData user) {
-		LocalDate date = LocalDate.now();
-		StringBuffer summary = new StringBuffer();		
-		summary.append("I examined your performance till now. Here it is:<br>");
-		try {			
-			List<SleepLog> sleepLogs = apiClientService.getClient().getSleep(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date).getSleepLogs();
-			if (sleepLogs.size()>0) {
-				summary.append("<b>Sleep:<b><br>");
-			}
-			for (SleepLog sleepLog: sleepLogs) {
-				int sleepDuration = (int) (sleepLog.getDuration()/1000/60);
-				summary.append("Duration: ").append(sleepDuration/60).append(" hours");
-				if (sleepDuration % 60 != 0) {
-					summary.append(" ").append(sleepDuration % 60).append(" minutes");
-				}
-				summary.append("<br>");
-				int awakeningCount = sleepLog.getAwakeningsCount();
-				summary.append("Awake Count: ").append(awakeningCount).append("<br>");
-			}
-			Activities activities = apiClientService.getClient().getActivities(ud, 
-					FitbitUser.CURRENT_AUTHORIZED_USER, date);
-			int steps = activities.getSummary().getSteps();
-			if (steps>0) {
-				summary.append("<b>Number of steps:</b> ").append(steps).append("<br>");			
-			}
-			int activeMinutes = activities.getSummary().getFairlyActiveMinutes()+activities.getSummary().getLightlyActiveMinutes()+activities.getSummary().getVeryActiveMinutes();
-			int sedentaryMinutes = activities.getSummary().getSedentaryMinutes();
-			summary.append("<b>Active Minutes:<b> ").append(activeMinutes).append("<br>");
-			summary.append("<b>Inactive Minutes:</b> ").append(sedentaryMinutes).append("<br>");			
-		} catch (FitbitAPIException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		circuit.createTextItem(user.getConversationID(), summary.toString());
-	}
+    }
+
+    public LocalUserDetail authenticateUser(UserData userData) {
+        LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
+        try {
+            String url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
+        } catch (FitbitAPIException e) {
+            LOGGER.error("New error", e);;
+        }
+        APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
+        if (userData.getAccessToken() != null) {
+            creds.setAccessToken(userData.getAccessToken());
+            creds.setAccessTokenSecret(userData.getAccessTokenSecret());
+        }
+        return ud;
+    }
+
+    public LocalUserDetail preAuthenticateUser(UserData userData) {
+        LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
+        APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
+        if (userData.getAccessToken() != null) {
+            creds.setAccessToken(userData.getAccessToken());
+            creds.setAccessTokenSecret(userData.getAccessTokenSecret());
+        }
+        return ud;
+    }
+
+    public void createAccessToken(LocalUserDetail ud, String pin, UserData userData) {
+        try {
+            APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
+            creds.setTempTokenVerifier(pin);
+            apiClientService.saveResourceCredentials(ud, creds);
+            apiClientService.getTokenCredentials(ud);
+            userData.setAccessToken(creds.getAccessToken());
+            userData.setAccessTokenSecret(creds.getAccessTokenSecret());
+        } catch (FitbitAPIException e) {
+            LOGGER.error("New error", e);;
+        }
+    }
+
+    public void createSubscription(UserData userData) {
+        LocalUserDetail ud = new LocalUserDetail(userData.getFitbitUserId());
+        try {
+            apiClientService.subscribe("2", ud, APICollectionType.activities, ud.getUserId());
+        } catch (FitbitAPIException e) {
+            LOGGER.error("New error", e);;
+        }
+    }
+
+    public void fetchUserSteps() {
+        for (UserData user : users.getUsers()) {
+            LocalUserDetail ud = authenticateUser(user);
+            try {
+                LocalDate date = LocalDate.now();
+                LOGGER.info("Printing steps for: " + date.toString());
+                Activities activities = apiClientService.getClient().getActivities(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date);
+                int stepsNew = activities.getSummary().getSteps();
+                LOGGER.info("New number of steps: " + stepsNew + " at time " + LocalDate.now().toString() + " " + LocalTime.now().toString());
+                analyzeUserSteps(user, stepsNew);
+            } catch (FitbitAPIException e) {
+                LOGGER.error("New error", e);;
+            }
+        }
+    }
+
+    public void analyzeUserSteps(UserData user, int newSteps) {
+        if (steps == 0) {
+            steps = newSteps;
+            LOGGER.info("No data");
+            return;
+        }
+        if (newSteps > steps) {
+            int diffSteps = newSteps - steps;
+            StringBuffer buff = new StringBuffer("In the last minute you walked ");
+            buff.append(diffSteps);
+            buff.append(" steps! Great, continue like this! :-)");
+            circuit.createTextItem(user.getConversationID(), buff.toString());
+            steps = newSteps;
+        } else {
+            if (newSteps < steps) {
+                circuit.createTextItem(user.getConversationID(), "Something is wrong with your tracker!");
+            } else {
+                circuit.createTextItem(user.getConversationID(), "Booooo! You did not walk any step in the last minute...don't you fear getting fat?");
+            }
+        }
+    }
+
+    public void addFood(LocalUserDetail ud, String food) {
+        LOGGER.info("Adding food");
+        ArrayList<String> aList = new ArrayList<String>(Arrays.asList(food.split(",")));
+        String fd = aList.get(0);
+        ;
+        String amount = aList.get(1);
+        int cal = Integer.parseInt(aList.get(2));
+        int unitId = 1;
+        NutritionalValuesEntry nutritionalValuesEntry = new NutritionalValuesEntry();
+        nutritionalValuesEntry.setCalories(cal);
+        int mealTypeId;
+        LocalDate date = LocalDate.now();
+        Calendar calendar = Calendar.getInstance();
+        int hours = calendar.get(Calendar.HOUR_OF_DAY);
+        LOGGER.info("It's " + "o'clock. It must be ");
+        if (hours >= 8 && hours <= 10) {
+            mealTypeId = 1;
+            LOGGER.info("breakfast.");
+        } else if (hours > 12 && hours <= 17) {
+            mealTypeId = 2;
+            LOGGER.info("morning snack.");
+        } else if (hours > 12 && hours <= 14) {
+            mealTypeId = 3;
+            LOGGER.info("lunch.");
+        } else if (hours > 14 && hours <= 18) {
+            mealTypeId = 4;
+            LOGGER.info("afternoon snack.");
+        } else if (hours > 17 && hours <= 21) {
+            mealTypeId = 5;
+            LOGGER.info("dinner.");
+        } else {
+            mealTypeId = 7;
+            LOGGER.info("anytime.");
+        }
+
+        try {
+            apiClientService.getClient().logFood(ud, fd, null, nutritionalValuesEntry, mealTypeId, unitId, amount, date);
+        } catch (FitbitAPIException e) {
+            LOGGER.error("New error", e);;
+        }
+        LOGGER.info("Food: " + fd + " added with amount: " + amount + " and mealTypeId: " + mealTypeId);
+    }
+
+    public void showDevice(LocalUserDetail ud, UserData user) {
+        try {
+            StringBuffer summary = new StringBuffer();
+            List<Device> devices = apiClientService.getClient().getDevices(ud);
+            summary.append("Your device status:<br>");
+            for (Device device : devices) {
+                summary.append("<b>Device: </b>" + device.getId() + "<br>");
+                summary.append("Type: " + device.getType() + "<br>");
+                summary.append("Version: " + device.getDeviceVersion() + "<br");
+                summary.append("Battery: " + device.getBattery() + "<br>");
+                summary.append("Last sync: " + device.getLastSyncTime() + "<br>");
+            }
+        } catch (FitbitAPIException e) {
+            LOGGER.error("New error", e);
+        }
+    }
+
+    public void showProfile(LocalUserDetail ud, UserData user) {
+        try {
+            UserInfo userInfo = apiClientService.getClient().getUserInfo(ud);
+            StringBuffer profile = new StringBuffer("Welcome to fitbit, " + userInfo.getDisplayName() + "<br>" + "<br>");
+            profile.append("Your fitbit profile data:<br>");
+            profile.append("<b>Name: </b>" + userInfo.getFullName() + "<br>");
+            profile.append("<b>Gender: </b>" + userInfo.getGender() + "<br>");
+            profile.append("<b>Height: </b>" + userInfo.getHeight() + "<br>");
+            profile.append("<b>Date of birth: </b>" + userInfo.getDateOfBirth() + "<br>");
+            circuit.createTextItem(user.getConversationID(), profile.toString());
+        } catch (FitbitAPIException e) {
+            LOGGER.error("New error", e);;
+        }
+    }
+
+    public void sendDailyStatistics(LocalUserDetail ud, UserData user) {
+        LocalDate date = LocalDate.now();
+        StringBuffer summary = new StringBuffer();
+        summary.append("I examined your performance till now. Here it is:<br>");
+        try {
+            List<SleepLog> sleepLogs = apiClientService.getClient().getSleep(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date).getSleepLogs();
+            if (sleepLogs.size() > 0) {
+                summary.append("<b>Sleep:<b><br>");
+            }
+            for (SleepLog sleepLog : sleepLogs) {
+                int sleepDuration = (int) (sleepLog.getDuration() / 1000 / 60);
+                summary.append("Duration: ").append(sleepDuration / 60).append(" hours");
+                if (sleepDuration % 60 != 0) {
+                    summary.append(" ").append(sleepDuration % 60).append(" minutes");
+                }
+                summary.append("<br>");
+                int awakeningCount = sleepLog.getAwakeningsCount();
+                summary.append("Awake Count: ").append(awakeningCount).append("<br>");
+            }
+            Activities activities = apiClientService.getClient().getActivities(ud, FitbitUser.CURRENT_AUTHORIZED_USER, date);
+            int steps = activities.getSummary().getSteps();
+            if (steps > 0) {
+                summary.append("<b>Number of steps:</b> ").append(steps).append("<br>");
+            }
+            int activeMinutes = activities.getSummary().getFairlyActiveMinutes() + activities.getSummary().getLightlyActiveMinutes()
+                    + activities.getSummary().getVeryActiveMinutes();
+            int sedentaryMinutes = activities.getSummary().getSedentaryMinutes();
+            summary.append("<b>Active Minutes:<b> ").append(activeMinutes).append("<br>");
+            summary.append("<b>Inactive Minutes:</b> ").append(sedentaryMinutes).append("<br>");
+        } catch (FitbitAPIException e) {
+            LOGGER.error("New error", e);;
+        }
+        circuit.createTextItem(user.getConversationID(), summary.toString());
+    }
 
 }

@@ -30,14 +30,19 @@ import net.ansible.protobuf.websocket.WSMessage.ContentType;
 import net.ansible.protobuf.websocket.WSMessage.Event;
 import net.ansible.protobuf.websocket.WSMessage.Response.ReturnCode;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.cycos.circuit.CircuitConnector;
 import com.cycos.circuit.CircuitEventListener;
 import com.cycos.circuit.ConfigHandler;
 import com.cycos.circuit.UserData;
 
 public class CircuitConnectorImpl implements CircuitConnector, EventListener {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(CircuitConnectorImpl.class);
+    
     private static final String IDENTIFIER_TOKEN = "accessToken";
+    private final static String STANDARD_SUBJECT = "Hi from your fitbit instructor";
     private CircuitEventListener listener;
     private final CircuitClient client;
     private final String userId;
@@ -48,23 +53,23 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         TestLibLogger.setLogger(new IClientLogger() {
 
             public void warn(String message) {
-                System.out.println(message);
+                LOGGER.info(message);
             }
 
             public void trace(String message) {
-                System.out.println(message);
+                LOGGER.info(message);
             }
 
             public void info(String message) {
-                System.out.println(message);
+                LOGGER.info(message);
             }
 
             public void error(String message) {
-                System.out.println(message);
+                LOGGER.info(message);
             }
 
             public void debug(String message) {
-                System.out.println(message);
+                LOGGER.info(message);
             }
         });
 
@@ -113,6 +118,11 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
 
             public void onShowProfileRequest(String circuitUserId) {
             }
+
+            public void onStartCombatMode(String circuitUserId, String extractAfter) {
+                // TODO Auto-generated method stub
+                
+            }
         };
     }
 
@@ -146,7 +156,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
                     // Remove fitbit user and get the user itself
                     conversation.getParticipantsList().remove(new Participant(userId));
 
-                    System.out.println(String.format(
+                    LOGGER.info(String.format(
                             "Found fitbit user configuration in conversation '%s' with credentials fitbitUserId='%s' accessToken='%s' accessTokenSecret='%s'",
                             item.getConvId(), fitBitUserId, accessToken, accessTokenSecret));
 
@@ -160,10 +170,8 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         return result;
     }
 
-    private final static String STANDARD_SUBJECT = "Hi from your fitbit instructor";
-
     public void createWelcomeTextItem(String conversationId) {
-        System.out.println("Create Welcome message in conversation " + conversationId);
+        LOGGER.info("Create Welcome message in conversation " + conversationId);
 
         StringBuilder builder = new StringBuilder();
         builder.append("<i>");
@@ -186,7 +194,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     }
 
     public void createURLTextItem(String conversationId, String url) {
-        System.out.println("Create URL " + url + " text message in conversation " + conversationId);
+        LOGGER.info("Create URL " + url + " text message in conversation " + conversationId);
         
         StringBuilder builder = new StringBuilder();
         builder.append("<b>");
@@ -213,7 +221,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     }
 
     public void saveUserCredentials(String conversationId, String fitbitUserId, String accessToken, String accessTokenSecret) {
-        System.out.println(String.format(
+        LOGGER.info(String.format(
                 "Create text item in conversation '%s' with fitbit user credentials fitbitUserId='%s' accessToken='%s' accessTokenSecret='%s'", conversationId,
                 fitbitUserId, accessToken, accessTokenSecret));
         
@@ -251,13 +259,13 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     }
 
     public void createTextItem(String conversationId, String text) {
-        System.out.println(String.format("Create text item with text '%s' in conversation '%s'", conversationId, text));
+        LOGGER.info(String.format("Create text item with text '%s' in conversation '%s'", conversationId, text));
         client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, text, TextItem.ContentType.RICH, null, null, null);
 
     }
 
     public void createDirectConversation(String userId) {
-        System.out.println(String.format("Create direct conversation with user  '%s'", userId));
+        LOGGER.info(String.format("Create direct conversation with user  '%s'", userId));
         client.conversation()
                 .create(Arrays.asList(new Participant[] { new Participant(userId) }), ConversationType.DIRECT, "FitBit private instructions", null);
 
@@ -313,14 +321,13 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
                         String creatorId = message.getEvent().getConversation().getAddItem().getItem().getCreatorId();
                         for (Command myCommand : commands) {
                             if (myCommand.match(command)) {
-                                System.out.println("Process command: " + command);
-                                myCommand.processs(creatorId, command);
+                                LOGGER.info("Process command: " + command);
+                                myCommand.processs(new ProcesssContext(creatorId, command));
                             }
 
                         }
                     }
                 }
-
             }
         }
     }
@@ -336,60 +343,68 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     private void initCommands() {
         commands.add(new Command("token") {
             @Override
-            public void processs(String circuitUserId, String command) {
-                String result = extractAfter(command);
+            public void processs(ProcesssContext context) {
+                String result = extractAfter(context.command);
                 if (result.startsWith("#160;")) {
                     result = result.substring("#160;".length());
                 }
-                listener.onNewAuthenticationToken(circuitUserId, result);
+                listener.onNewAuthenticationToken(context.circuitUserId, result);
             }
 
         });
 
         commands.add(new Command("food") {
             @Override
-            public void processs(String circuitUserId, String command) {
-                listener.onNewFoodEntry(circuitUserId, extractAfter(command));
+            public void processs(ProcesssContext context) {
+                listener.onNewFoodEntry(context.circuitUserId, extractAfter(context.command));
             }
 
         });
 
         commands.add(new Command("activity") {
             @Override
-            public void processs(String circuitUserId, String command) {
-                listener.onNewActivityEntry(circuitUserId, extractAfter(command));
+            public void processs(ProcesssContext context) {
+                listener.onNewActivityEntry(context.circuitUserId, extractAfter(context.command));
             }
 
         });
         
         commands.add(new Command("show stats") {
             @Override
-            public void processs(String circuitUserId, String command) {
-                listener.onShowStatsRequest(circuitUserId);
+            public void processs(ProcesssContext context) {
+                listener.onShowStatsRequest(context.circuitUserId);
             }
 
         });
         
         commands.add(new Command("show alarm") {
             @Override
-            public void processs(String circuitUserId, String command) {
-                listener.onShowAlarmRequest(circuitUserId);
+            public void processs(ProcesssContext context) {
+                listener.onShowAlarmRequest(context.circuitUserId);
             }
 
         });
         
         commands.add(new Command("show profile") {
             @Override
-            public void processs(String circuitUserId, String command) {
-                listener.onShowProfileRequest(circuitUserId);
+            public void processs(ProcesssContext context) {
+                listener.onShowProfileRequest(context.circuitUserId);
             }
 
         });
 
         commands.add(new Command("user") {
             @Override
-            public void processs(String circuitUserId, String command) {
-                listener.onNewFitbitUserId(circuitUserId, extractAfter(command));
+            public void processs(ProcesssContext context) {
+                listener.onNewFitbitUserId(context.circuitUserId, extractAfter(context.command));
+            }
+
+        });
+        
+        commands.add(new Command("combat mode") {
+            @Override
+            public void processs(ProcesssContext context) {
+                listener.onStartCombatMode(context.circuitUserId, extractAfter(context.command));
             }
 
         });
@@ -409,9 +424,9 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
 
         public String extractAfter(String command) {
             String start = prefix + " " + this.command + " ";
-            return command.substring(start.length());
+            return start.length() == command.length() ? "" : command.substring(start.length());
         }
 
-        public abstract void processs(String circuitUserId, String command);
+        public abstract void processs(ProcesssContext context);
     }
 }

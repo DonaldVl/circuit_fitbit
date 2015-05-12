@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%msg%n</pattern>
+		</encoder>
+	</appender>
+
+
+	<logger name="com.cycos" level="TRACE">
+		<appender-ref ref="STDOUT" />
+	</logger>
+
+	<logger name="net.ansible" level="TRACE">
+		<appender-ref ref="STDOUT" />
+	</logger>
+
+
+	<logger name="org" level="INFO">
+		<appender-ref ref="STDOUT" />
+	</logger>
+
+
+</configuration>
