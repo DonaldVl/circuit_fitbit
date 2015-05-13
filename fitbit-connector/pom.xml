@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.cycos.circuit</groupId>
 	<artifactId>fitbit-connector</artifactId>
@@ -21,6 +22,12 @@
 			<version>4.11</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.jfree</groupId>
+			<artifactId>jfreechart</artifactId>
+			<version>1.0.14</version>
+		</dependency>
+
 		<dependency>
 			<groupId>com.fitbit</groupId>
 			<artifactId>fitbit4j</artifactId>
@@ -52,18 +59,18 @@
 			<artifactId>java-client-lib</artifactId>
 			<version>1.5.5-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.cycos.circuit</groupId>
 			<artifactId>datastore</artifactId>
 			<version>1.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-		<groupId>com.cycos.circuit</groupId>
-		<artifactId>circuit-connector</artifactId>
-		<version>1.0-SNAPSHOT</version>
-	</dependency>
-	
+			<groupId>com.cycos.circuit</groupId>
+			<artifactId>circuit-connector</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+
 	</dependencies>
 
 

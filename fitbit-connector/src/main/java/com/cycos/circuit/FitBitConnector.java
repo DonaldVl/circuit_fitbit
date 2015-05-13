@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
+import org.jfree.chart.ChartFactory;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.slf4j.Logger;
@@ -126,7 +127,7 @@ public class FitBitConnector {
             }
 
             public void onStartCombatMode(String circuitUserId, String extractAfter) {
-
+                
             }
         });
     }
