@@ -119,7 +119,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             public void onShowProfileRequest(String circuitUserId) {
             }
 
-            public void onStartCombatMode(String circuitUserId, String extractAfter) {
+            public void onStartCombatMode(String circuitUserId, String extractAfter, String conversationId) {
                 // TODO Auto-generated method stub
                 
             }
@@ -192,6 +192,31 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
 
         client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, builder.toString(), TextItem.ContentType.RICH, null, null, null);
     }
+
+    public void createGroupWelcomeTextItem(String conversationId) {
+        LOGGER.info("Create Welcome message in conversation " + conversationId);
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("<i>");
+        builder.append("You want to have a challenge with the already registered members?");
+        builder.append("</i>");
+        
+        builder.append("<br>");
+        
+        builder.append("Type ");
+        builder.append("<b>");
+        builder.append("fitbit challenge mode <TIME>");  
+        builder.append("</b>");
+        builder.append(" to start your competition.");
+        builder.append("<br><br>");
+        
+        builder.append("For example:");
+        builder.append("<br>");
+        builder.append("fitbit challenge mode 10m will compare the steps within the next 10 minutes");
+
+        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, builder.toString(), TextItem.ContentType.RICH, null, null, null);
+    }
+    
 
     public void createURLTextItem(String conversationId, String url) {
         LOGGER.info("Create URL " + url + " text message in conversation " + conversationId);
@@ -322,7 +347,9 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
                         for (Command myCommand : commands) {
                             if (myCommand.match(command)) {
                                 LOGGER.info("Process command: " + command);
-                                myCommand.processs(new ProcesssContext(creatorId, command));
+                                ProcesssContext context = new ProcesssContext(creatorId, command);
+                                context.conversationId = message.getEvent().getConversation().getConvId();
+                                myCommand.processs(context);
                             }
 
                         }
@@ -401,10 +428,10 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
 
         });
         
-        commands.add(new Command("combat mode") {
+        commands.add(new Command("challenge mode") {
             @Override
             public void processs(ProcesssContext context) {
-                listener.onStartCombatMode(context.circuitUserId, extractAfter(context.command));
+                listener.onStartCombatMode(context.circuitUserId, extractAfter(context.command), context.conversationId);
             }
 
         });

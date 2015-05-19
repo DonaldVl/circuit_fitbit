@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jfree.chart.ChartFactory;
 import org.joda.time.LocalDate;
@@ -85,6 +88,7 @@ public class FitBitConnector {
                         circuit.createDirectConversation(userId);
                     }
                 }
+                circuit.createGroupWelcomeTextItem(conversationID);
             }
 
             public void onNewDirectConversation(String conversationID, String userID) {
@@ -126,7 +130,22 @@ public class FitBitConnector {
                 showProfile(ud, userData);
             }
 
-            public void onStartCombatMode(String circuitUserId, String extractAfter) {
+            public void onStartCombatMode(String circuitUserId, String extractAfter, final String conversationId) {
+                circuit.createTextItem(conversationId, "Let' get ready to rumble");
+                final AtomicInteger counter = new AtomicInteger(3);
+                final Timer timer = new Timer();
+                timer.scheduleAtFixedRate(new TimerTask() {
+
+                    @Override
+                    public void run() {
+                        
+                        circuit.createTextItem(conversationId, "" + counter.getAndDecrement());
+                        if(counter.get() <= 0) {
+                            timer.cancel();
+                        }
+                    }
+                    
+                }, 0, 1000);
                 
             }
         });
