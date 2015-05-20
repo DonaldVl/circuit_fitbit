@@ -39,8 +39,8 @@ public class FitBitConnectorTest {
         Locale urls = Locale.US;
 
         Map<String, Integer> map = new HashMap<String, Integer>();
-        map.put("Armin", 10000);
-        map.put("Alper", 8000);
+//        map.put("Armin", 10000);
+//        map.put("Alper", 8000);
         map.put("Michael", 8000);
         map.put("Donald", 1000);
 

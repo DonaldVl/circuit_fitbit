@@ -546,7 +546,7 @@ public class FitBitConnector {
         StringBuilder builder = new StringBuilder();
         builder.append("Challenge ended. The winner is ");
         builder.append("<b>");
-        builder.append(results.get(0));
+        builder.append(circuit.getName(results.get(0).userId));
         builder.append("</b>");
 
         circuit.createTextItem(conversationId, builder.toString());
