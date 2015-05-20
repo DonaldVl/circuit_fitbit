@@ -1,5 +1,6 @@
 package com.cycos.circuit.impl;
 
+
 public class ProcesssContext {
     public String circuitUserId;
     public String command;

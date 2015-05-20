@@ -12,5 +12,6 @@ public interface CircuitEventListener {
     public void onShowStatsRequest(String circuitUserId);
     public void onShowAlarmRequest(String circuitUserId);
     public void onShowProfileRequest(String circuitUserId);
-    public void onStartCombatMode(String circuitUserId, String extractAfter, String conversationId);
+    public void onStartCombatMode(String circuitUserId, int minutes, String conversationId);
+    public void onStopCombatMode(String circuitUserId, String extractAfter, String conversationId);
 }

@@ -1,17 +1,31 @@
 package com.cycos.circuit;
 
+import static org.junit.Assert.fail;
+
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.general.DefaultPieDataset;
+import org.jfree.data.general.PieDataset;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.slf4j.Logger;
@@ -47,11 +61,13 @@ public class FitBitConnector {
     private String fitbitSiteBaseUrl = null;
     private String clientConsumerKey = null;
     private String clientSecret = null;
-    private int steps = 0;
     private FitbitData data = null;
     private CircuitConnector circuit = null;
     private FitbitUsers users = null;
     private FitbitUsers tempUsers = null;
+    private HashSet<String> combatConversations = new HashSet<String>();
+    private HashMap<String, UserResult> combat = new HashMap<String, UserResult>();
+    private HashMap<String, CombatConversation> multiCombatConversation = new HashMap<String, CombatConversation>();
 
     public FitBitConnector(final CircuitConnector circuit) {
         users = new FitbitUsers();
@@ -64,15 +80,14 @@ public class FitBitConnector {
             public void onNewFoodEntry(String userId, String food) {
                 UserData user = users.get(userId);
                 LocalUserDetail ud = authenticateUser(user);
-                ;
                 addFood(ud, food);
             }
 
-			public void onNewFitbitUserId(String userId, String fitbitUserId, String conversationID) {
-                UserData user= tempUsers.get(userId);
+            public void onNewFitbitUserId(String userId, String fitbitUserId, String conversationID) {
+                UserData user = tempUsers.get(userId);
                 if (user == null) {
-                	 user = new UserData(userId, null, conversationID, null, null);
-                     tempUsers.add(user);
+                    user = new UserData(userId, null, conversationID, null, null);
+                    tempUsers.add(user);
                 }
                 user.setFitbitUserId(fitbitUserId);
                 LocalUserDetail ud = new LocalUserDetail(user.getFitbitUserId());
@@ -80,16 +95,25 @@ public class FitBitConnector {
                     String url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
                     circuit.createURLTextItem(user.getConversationID(), url);
                 } catch (FitbitAPIException e) {
-                    LOGGER.error("New error", e);;
+                    LOGGER.error("New error", e);
+                    ;
                 }
             }
 
             public void onNewGroupConversation(String conversationID, List<String> userIds) {
                 LOGGER.info("Fitbit user was added to a group conversation. Create direct conversation with all non fitbit members.");
                 for (String userId : userIds) {
-                    if (tempUsers.get(userId) == null) {
+                    // Ignore fitBit user
+                    if (userId.equals(circuit.getCircuitUserId())) {
+                        continue;
+                    }
+
+                    if (users.get(userId) == null) {
                         LOGGER.info(userId + " has no account. Create new direct conversation");
                         circuit.createDirectConversation(userId);
+                    } else {
+                        UserData userData = users.get(userId);
+                        userData.addGroupConversation(conversationID);
                     }
                 }
                 circuit.createGroupWelcomeTextItem(conversationID);
@@ -100,13 +124,19 @@ public class FitBitConnector {
                 tempUsers.add(user);
                 circuit.createWelcomeTextItem(conversationID);
             }
-            
+
             public void onNewAuthenticationToken(String userID, String token, String conversationID) {
                 UserData user = tempUsers.get(userID);
                 LocalUserDetail ud = preAuthenticateUser(user);
                 createAccessToken(ud, token, user);
                 circuit.saveUserCredentials(user.getConversationID(), user.getFitbitUserId(), user.getAccessToken(), user.getAccessTokenSecret());
                 users.add(user);
+
+                UserData userData = tempUsers.get(userID);
+                if (userData != null) {
+                    tempUsers.remove(user);
+                }
+
                 showProfile(ud, user);
                 showDevice(ud, user);
                 sendDailyStatistics(ud, user);
@@ -134,23 +164,55 @@ public class FitBitConnector {
                 showProfile(ud, userData);
             }
 
-            public void onStartCombatMode(String circuitUserId, String extractAfter, final String conversationId) {
+            public void onStartCombatMode(final String circuitUserId, final int minutes, final String conversationId) {
                 circuit.createTextItem(conversationId, "Let' get ready to rumble");
                 final AtomicInteger counter = new AtomicInteger(3);
                 final Timer timer = new Timer();
+                final Timer cleanUpTimer = new Timer();
+                final Timer summaryTimer = new Timer();
                 timer.scheduleAtFixedRate(new TimerTask() {
 
                     @Override
                     public void run() {
-                        
+
                         circuit.createTextItem(conversationId, "" + counter.getAndDecrement());
-                        if(counter.get() <= 0) {
+                        if (counter.get() <= 0) {
                             timer.cancel();
+
+                            if (!combatConversations.contains(conversationId)) {
+                                combatConversations.add(conversationId);
+                            } else {
+                                LOGGER.warn("Combat mode is already enabled for conversation {}", conversationId);
+                            }
+                            summaryTimer.scheduleAtFixedRate(new TimerTask() {
+
+                                @Override
+                                public void run() {
+                                    createIntermediateSummary(conversationId);
+                                }
+
+                            }, 0, 2 * 60 * 1000);
+                            cleanUpTimer.schedule(new TimerTask() {
+
+                                @Override
+                                public void run() {
+                                    createEndSummary(conversationId);
+                                    cleanUpTimer.cancel();
+                                    summaryTimer.cancel();
+
+                                }
+                            }, minutes * 60 * 1000);
+
                         }
                     }
-                    
+
                 }, 0, 1000);
-                
+
+            }
+
+            public void onStopCombatMode(String circuitUserId, String extractAfter, String conversationId) {
+                combatConversations.clear();
+                combat.clear();
             }
         });
     }
@@ -188,10 +250,12 @@ public class FitBitConnector {
             LOGGER.info("Welcome " + userInfo.getDisplayName());
         } catch (FitbitAPIException e) {
             LOGGER.info("FitBit error: " + e.getMessage());
-            LOGGER.error("New error", e);;
+            LOGGER.error("New error", e);
+            ;
         } catch (IOException e) {
             LOGGER.info("IO error: " + e.getMessage());
-            LOGGER.error("New error", e);;
+            LOGGER.error("New error", e);
+            ;
         }
     }
 
@@ -200,7 +264,7 @@ public class FitBitConnector {
         try {
             String url = apiClientService.getResourceOwnerAuthorizationURL(ud, "");
         } catch (FitbitAPIException e) {
-            LOGGER.error("New error", e);;
+            LOGGER.error("New error", e);
         }
         APIResourceCredentials creds = apiClientService.getResourceCredentialsByUser(ud);
         if (userData.getAccessToken() != null) {
@@ -229,7 +293,8 @@ public class FitBitConnector {
             userData.setAccessToken(creds.getAccessToken());
             userData.setAccessTokenSecret(creds.getAccessTokenSecret());
         } catch (FitbitAPIException e) {
-            LOGGER.error("New error", e);;
+            LOGGER.error("New error", e);
+            ;
         }
     }
 
@@ -238,7 +303,8 @@ public class FitBitConnector {
         try {
             apiClientService.subscribe("2", ud, APICollectionType.activities, ud.getUserId());
         } catch (FitbitAPIException e) {
-            LOGGER.error("New error", e);;
+            LOGGER.error("New error", e);
+            ;
         }
     }
 
@@ -253,31 +319,64 @@ public class FitBitConnector {
                 LOGGER.info("New number of steps: " + stepsNew + " at time " + LocalDate.now().toString() + " " + LocalTime.now().toString());
                 analyzeUserSteps(user, stepsNew);
             } catch (FitbitAPIException e) {
-                LOGGER.error("New error", e);;
+                LOGGER.error("New error", e);
             }
         }
     }
 
     public void analyzeUserSteps(UserData user, int newSteps) {
-        if (steps == 0) {
-            steps = newSteps;
+        if (user.getSteps() == 0) {
+            user.setSteps(newSteps);
+            updateCombatUser(user, new Integer(0));
             LOGGER.info("No data");
             return;
         }
-        if (newSteps > steps) {
-            int diffSteps = newSteps - steps;
+        if (newSteps > user.getSteps()) {
+            int diffSteps = newSteps - user.getSteps();
             StringBuffer buff = new StringBuffer("In the last minute you walked ");
             buff.append(diffSteps);
             buff.append(" steps! Great, continue like this! :-)");
-            circuit.createTextItem(user.getConversationID(), buff.toString());
-            steps = newSteps;
+            publish(user, buff.toString(), new Integer(diffSteps), false);
+            user.setSteps(newSteps);
         } else {
-            if (newSteps < steps) {
-                circuit.createTextItem(user.getConversationID(), "Something is wrong with your tracker!");
+            if (newSteps < user.getSteps()) {
+                publish(user, "Something is wrong with your tracker!", null, true);
             } else {
-                circuit.createTextItem(user.getConversationID(), "Booooo! You did not walk any step in the last minute...don't you fear getting fat?");
+                publish(user, "Booooo! You did not walk any step in the last minute...don't you fear getting fat?", null, true);
             }
         }
+    }
+
+    private void publish(UserData user, String text, Integer diffSteps, boolean onlyPrivate) {
+        circuit.createTextItem(user.getConversationID(), text);
+        if (onlyPrivate) {
+            return;
+        }
+
+        for (String convId : user.getGroupConversations()) {
+            if (combatConversations.contains(convId)) {
+                String newText = "Hey " + circuit.getName(user.getUserID()) + ": " + text;
+                circuit.createTextItem(convId, newText);
+
+                updateCombatUser(user, diffSteps);
+            }
+        }
+    }
+
+    private void updateCombatUser(UserData user, Integer diffSteps) {
+        if (diffSteps == null) {
+            return;
+        }
+
+        if (!combat.containsKey(user.getUserID())) {
+            UserResult result = new UserResult();
+            result.userId = user.getUserID();
+            result.value = 0;
+            combat.put(user.getUserID(), result);
+        }
+        UserResult result = combat.get(user.getUserID());
+        result.value = new Integer(result.value.intValue() + diffSteps.intValue());
+
     }
 
     public void addFood(LocalUserDetail ud, String food) {
@@ -318,7 +417,8 @@ public class FitBitConnector {
         try {
             apiClientService.getClient().logFood(ud, fd, null, nutritionalValuesEntry, mealTypeId, unitId, amount, date);
         } catch (FitbitAPIException e) {
-            LOGGER.error("New error", e);;
+            LOGGER.error("New error", e);
+            ;
         }
         LOGGER.info("Food: " + fd + " added with amount: " + amount + " and mealTypeId: " + mealTypeId);
     }
@@ -351,7 +451,8 @@ public class FitBitConnector {
             profile.append("<b>Date of birth: </b>" + userInfo.getDateOfBirth() + "<br>");
             circuit.createTextItem(user.getConversationID(), profile.toString());
         } catch (FitbitAPIException e) {
-            LOGGER.error("New error", e);;
+            LOGGER.error("New error", e);
+            ;
         }
     }
 
@@ -385,9 +486,103 @@ public class FitBitConnector {
             summary.append("<b>Active Minutes:<b> ").append(activeMinutes).append("<br>");
             summary.append("<b>Inactive Minutes:</b> ").append(sedentaryMinutes).append("<br>");
         } catch (FitbitAPIException e) {
-            LOGGER.error("New error", e);;
+            LOGGER.error("New error", e);
+            ;
         }
         circuit.createTextItem(user.getConversationID(), summary.toString());
+    }
+
+    private void generatePie(Map<String, Integer> map) {
+        String title = "Our first challenge but not a personal one :-(";
+        boolean legend = true;
+        boolean tooltips = true;
+        Locale urls = Locale.US;
+
+        PieDataset dataset = createPieDataSet(map.entrySet());
+        JFreeChart createPieChart = ChartFactory.createPieChart(title, dataset, legend, tooltips, urls);
+
+        try {
+            ChartUtilities.saveChartAsJPEG(new File("./src/main/resources/ChallengeResult.jpg"), createPieChart, 500, 300);
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("Exception while saving chart as jpeg");
+        }
+    }
+
+    private void createIntermediateSummary(String conversationId) {
+        List<UserResult> results = new ArrayList<UserResult>(combat.values());
+
+        if (!results.isEmpty()) {
+            Collections.sort(results);
+            Collections.reverse(results);
+
+            StringBuilder builder = new StringBuilder();
+            for (int cnt = 0; cnt < results.size(); cnt++) {
+                UserResult myResult = results.get(cnt);
+                builder.append(cnt + 1);
+                builder.append(". ");
+                builder.append(circuit.getName(myResult.userId));
+                builder.append(" with ");
+                builder.append(myResult.value);
+                builder.append(" steps");
+                builder.append("<br>");
+            }
+            circuit.createTextItem(conversationId, builder.toString());
+        }
+    }
+
+    private void createEndSummary(String conversationId) {
+        LOGGER.info("Clean up of {}", conversationId);
+
+        // Remove conversation from list because competiotion time was reached
+        if (combatConversations.contains(conversationId)) {
+            combatConversations.remove(conversationId);
+        }
+
+        List<UserResult> results = new ArrayList<UserResult>(combat.values());
+        Collections.sort(results);
+        Collections.reverse(results);
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("Challenge ended. The winner is ");
+        builder.append("<b>");
+        builder.append(results.get(0));
+        builder.append("</b>");
+
+        circuit.createTextItem(conversationId, builder.toString());
+
+        HashMap<String, Integer> map = new HashMap<String, Integer>();
+        for (UserResult result : results) {
+            map.put(circuit.getName(result.userId), result.value);
+        }
+        LOGGER.info("Generate pie for converstion '{}' with '{}' users", conversationId, map.size());
+        generatePie(map);
+        combat.clear();
+    }
+
+    private static PieDataset createPieDataSet(Set<Entry<String, Integer>> data) {
+        DefaultPieDataset result = new DefaultPieDataset();
+        for (Entry<String, Integer> entry : data) {
+            result.setValue(entry.getKey(), entry.getValue());
+        }
+        return result;
+    }
+
+    class UserResult implements Comparable<UserResult> {
+        String userId;
+        Integer value;
+
+        public int compareTo(UserResult o) {
+            return value.compareTo(o.value);
+        }
+
+    }
+
+    class CombatConversation {
+        final AtomicInteger counter = new AtomicInteger(3);
+        final Timer timer = new Timer();
+        final Timer cleanUpTimer = new Timer();
+        final Timer summaryTimer = new Timer();
     }
 
 }

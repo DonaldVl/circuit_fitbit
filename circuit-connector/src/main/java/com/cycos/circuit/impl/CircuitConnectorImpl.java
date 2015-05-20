@@ -40,8 +40,8 @@ import com.cycos.circuit.UserData;
 
 public class CircuitConnectorImpl implements CircuitConnector, EventListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(CircuitConnectorImpl.class);
-    
-    private static final String IDENTIFIER_TOKEN = "accessToken";
+
+    private static final String IDENTIFIER_TOKEN = "<b>Great your fitbit account is now connected to your circuit acccount</b><br><br>";
     private final static String STANDARD_SUBJECT = "Hi from your fitbit instructor";
     private CircuitEventListener listener;
     private final CircuitClient client;
@@ -84,13 +84,12 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         } else if (Boolean.valueOf(config.get("clientApiDirect")).booleanValue()) {
             client = CircuitFactory.getSyncClientApiClient(server, userEmail, password);
         } else {
-        	ConnectionConfig testLibConfig = null;
-        	if(config.get("proxyHost") != null) {
-        		testLibConfig = new ConnectionConfig(server, port, 
-        				config.get("proxyHost"), config.get("proxyPort"));
-        	} else {
-        		testLibConfig = new ConnectionConfig(server, port);
-        	}
+            ConnectionConfig testLibConfig = null;
+            if (config.get("proxyHost") != null) {
+                testLibConfig = new ConnectionConfig(server, port, config.get("proxyHost"), config.get("proxyPort"));
+            } else {
+                testLibConfig = new ConnectionConfig(server, port);
+            }
             client = CircuitFactory.getAccessServerClient(testLibConfig, userEmail, password);
         }
 
@@ -125,9 +124,10 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             public void onShowProfileRequest(String circuitUserId) {
             }
 
-            public void onStartCombatMode(String circuitUserId, String extractAfter, String conversationId) {
-                // TODO Auto-generated method stub
-                
+            public void onStartCombatMode(String circuitUserId, int minutes, String conversationId) {
+            }
+
+            public void onStopCombatMode(String circuitUserId, String extractAfter, String conversationId) {
             }
         };
     }
@@ -160,7 +160,13 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
                     String fitBitUserId = split[5];
 
                     // Remove fitbit user and get the user itself
-                    conversation.getParticipantsList().remove(new Participant(userId));
+                    // conversation.getParticipantsList().remove(new Participant(userId));
+                    for (Participant participant : conversation.getParticipantsList()) {
+                        if (participant.getUserId().equals(userId)) {
+                            conversation.getParticipantsList().remove(participant);
+                            break;
+                        }
+                    }
 
                     LOGGER.info(String.format(
                             "Found fitbit user configuration in conversation '%s' with credentials fitbitUserId='%s' accessToken='%s' accessTokenSecret='%s'",
@@ -183,15 +189,15 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         builder.append("<i>");
         builder.append("To connect your fitbit account to circuit I need some information.");
         builder.append("</i>");
-        
+
         builder.append("<br>");
-        
+
         builder.append("<b>");
-        builder.append("Step One: Please send me your fitbit user with the follwing message");  
+        builder.append("Step One: Please send me your fitbit user with the follwing message");
         builder.append("</b>");
-        
+
         builder.append("<br><br>");
-        
+
         builder.append("<div style=\"font-size: 12px;\" align=\"center\">");
         builder.append("fitbit user YOUR_USERID");
         builder.append("</div>");
@@ -204,89 +210,83 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
 
         StringBuilder builder = new StringBuilder();
         builder.append("<i>");
-        builder.append("You want to have a challenge with the already registered members?");
+        builder.append("You want to have a challenge with the already registered conversation participants?");
         builder.append("</i>");
-        
+
         builder.append("<br>");
-        
+
         builder.append("Type ");
         builder.append("<b>");
-        builder.append("fitbit challenge mode <TIME>");  
+        builder.append("fitbit challenge mode TIME");
         builder.append("</b>");
         builder.append(" to start your competition.");
         builder.append("<br><br>");
-        
+
         builder.append("For example:");
         builder.append("<br>");
         builder.append("fitbit challenge mode 10m will compare the steps within the next 10 minutes");
 
         client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, builder.toString(), TextItem.ContentType.RICH, null, null, null);
     }
-    
 
     public void createURLTextItem(String conversationId, String url) {
         LOGGER.info("Create URL " + url + " text message in conversation " + conversationId);
-        
+
         StringBuilder builder = new StringBuilder();
         builder.append("<b>");
         builder.append("Step Two: Please click the link");
         builder.append("</b>");
-        
+
         builder.append("<br><br>");
-        
+
         builder.append(String.format("<a href=\"%s\">%s</a>", url, url));
         builder.append("<br><br>");
-        
+
         builder.append("<b>");
         builder.append("and follow the instruction. Afterwards come back and post your token with the follwing message");
         builder.append("</b>");
-        
+
         builder.append("<br><br>");
         builder.append("<div style=\"font-size: 12px;\" align=\"center\">");
         builder.append("fitbit token YOUR_TOKEN");
         builder.append("</div>");
-        
-        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT,
-                builder.toString(),
-                TextItem.ContentType.RICH, null, null, null);
+
+        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, builder.toString(), TextItem.ContentType.RICH, null, null, null);
     }
 
     public void saveUserCredentials(String conversationId, String fitbitUserId, String accessToken, String accessTokenSecret) {
         LOGGER.info(String.format(
                 "Create text item in conversation '%s' with fitbit user credentials fitbitUserId='%s' accessToken='%s' accessTokenSecret='%s'", conversationId,
                 fitbitUserId, accessToken, accessTokenSecret));
-        
+
         StringBuilder builder = new StringBuilder();
         builder.append("<b>");
         builder.append("Great your fitbit account is now connected to your circuit acccount");
         builder.append("</b>");
-        
+
         builder.append("<br>");
         builder.append("<br>");
-        
+
         builder.append("accessToken=");
         builder.append("'");
         builder.append(accessToken);
         builder.append("'");
-        
+
         builder.append("<br>");
-        
-      
+
         builder.append("accessTokenSecret=");
         builder.append("'");
         builder.append(accessTokenSecret);
         builder.append("'");
-        
+
         builder.append("<br>");
-        
+
         builder.append("fitBitUserId=");
         builder.append("'");
         builder.append(fitbitUserId);
         builder.append("'");
 
-        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT,
-                builder.toString(),
-                TextItem.ContentType.RICH, null, null, null);
+        client.conversation().addTextItem(conversationId, STANDARD_SUBJECT, builder.toString(), TextItem.ContentType.RICH, null, null, null);
     }
 
     public void createTextItem(String conversationId, String text) {
@@ -307,9 +307,15 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         if (e.getType() == ContentType.CONVERSATION && e.getConversation() != null && e.getConversation().getCreate() != null) {
 
             CreateConversationEvent create = e.getConversation().getCreate();
-//            createWelcomeTextItem(create.getConversation().getConvId());
+            // createWelcomeTextItem(create.getConversation().getConvId());
             // Remove fitbit user
-            create.getConversation().getParticipantsList().remove(new Participant(userId));
+            for (Participant participant : create.getConversation().getParticipantsList()) {
+                if (participant.getUserId().equals(userId)) {
+                    create.getConversation().getParticipantsList().remove(participant);
+                    break;
+                }
+            }
+
             if (e.getConversation().getCreate().getConversation().getType() == ConversationType.DIRECT) {
 
                 listener.onNewDirectConversation(create.getConversation().getConvId(), create.getConversation().getParticipantsList().get(0).getUserId());
@@ -373,14 +379,21 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         return userId.equals(item.getCreatorId());
     }
 
+    private String normalize(String result) {
+        if (result.startsWith("#160;")) {
+            result = result.substring("#160;".length());
+        } else if (result.startsWith("&#160;")) {
+            result = result.substring("&#160;".length());
+        }
+        return result;
+    }
+
     private void initCommands() {
         commands.add(new Command("token") {
             @Override
             public void processs(ProcesssContext context) {
-                String result = extractAfter(context.command);
-                if (result.startsWith("#160;")) {
-                    result = result.substring("#160;".length());
-                }
+                String result = extractAfter(context.command).trim();
+                result = normalize(result);
                 listener.onNewAuthenticationToken(context.circuitUserId, result, context.conversationId);
             }
 
@@ -401,7 +414,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             }
 
         });
-        
+
         commands.add(new Command("show stats") {
             @Override
             public void processs(ProcesssContext context) {
@@ -409,7 +422,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             }
 
         });
-        
+
         commands.add(new Command("show alarm") {
             @Override
             public void processs(ProcesssContext context) {
@@ -417,7 +430,7 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
             }
 
         });
-        
+
         commands.add(new Command("show profile") {
             @Override
             public void processs(ProcesssContext context) {
@@ -429,15 +442,38 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         commands.add(new Command("user") {
             @Override
             public void processs(ProcesssContext context) {
-                listener.onNewFitbitUserId(context.circuitUserId, extractAfter(context.command), context.conversationId);
+                String user = extractAfter(context.command);
+                user = normalize(user.trim());
+
+                listener.onNewFitbitUserId(context.circuitUserId, user, context.conversationId);
             }
 
         });
-        
+
         commands.add(new Command("challenge mode") {
             @Override
             public void processs(ProcesssContext context) {
-                listener.onStartCombatMode(context.circuitUserId, extractAfter(context.command), context.conversationId);
+                String command = extractAfter(context.command);
+                int minutes = 0;
+
+                if (!command.isEmpty()) {
+                    String extract = command.trim();
+                    String[] split = extract.split("m");
+                    if (split != null && split.length >= 1) {
+                        minutes = Integer.valueOf(split[0]).intValue();
+                        LOGGER.info("Extracted {} minutes for new combat in conversation", minutes);
+                    }
+
+                }
+                listener.onStartCombatMode(context.circuitUserId, minutes, context.conversationId);
+            }
+
+        });
+
+        commands.add(new Command("challenge stop") {
+            @Override
+            public void processs(ProcesssContext context) {
+                listener.onStopCombatMode(context.circuitUserId, extractAfter(context.command), context.conversationId);
             }
 
         });
@@ -456,10 +492,20 @@ public class CircuitConnectorImpl implements CircuitConnector, EventListener {
         }
 
         public String extractAfter(String command) {
-            String start = prefix + " " + this.command + " ";
-            return start.length() == command.length() ? "" : command.substring(start.length());
+            String start = prefix + " " + this.command;
+
+            String result = start.length() == command.length() ? "" : command.substring(start.length());
+            return result;
         }
 
         public abstract void processs(ProcesssContext context);
+    }
+
+    public String getName(String circuitUserId) {
+        return client.user().getUser(circuitUserId).getResponse().getUser().getGetById().getUser().getDisplayName();
+    }
+
+    public String getCircuitUserId() {
+        return this.userId;
     }
 }

@@ -11,4 +11,6 @@ public interface CircuitConnector {
 	public void createTextItem(String conversationId, String text);
 	public void createDirectConversation(String userId);
 	public void setCircuitEventListener(CircuitEventListener listener);
+	public String getName(String circuitUserId);
+	public String getCircuitUserId();
 }
